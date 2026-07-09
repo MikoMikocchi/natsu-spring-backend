@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+.clawdea/REPO_STATE.md
+
+### Local package storage (natsu.storage-root default) ###
+/storage/
