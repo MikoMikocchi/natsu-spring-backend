@@ -17,6 +17,15 @@ spring:
     enabled: true
   jackson:
     property-naming-strategy: SNAKE_CASE
+  servlet:
+    multipart:
+      max-file-size: 55MB
+      max-request-size: 55MB
 
 server:
   port: 3000
+
+natsu:
+  storage-root: ${NATSU_STORAGE_ROOT:./storage}
+  max-package-bytes: 52428800     # 50 MB
+  max-storage-bytes-per-user: 524288000   # 500 MB
