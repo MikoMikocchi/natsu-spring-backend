@@ -1,0 +1,107 @@
+package io.mikoshift.natsu.backend.service.bookimport;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+import org.junit.jupiter.api.Test;
+
+class EpubImporterTest {
+
+    private final EpubImporter importer = new EpubImporter();
+
+    @Test
+    void parsesTitleAndSpineOrderedChapters() {
+        byte[] epub = buildEpub(Map.of(
+                "META-INF/container.xml", containerXml("OEBPS/content.opf"),
+                "OEBPS/content.opf", opfXml(),
+                "OEBPS/chapter1.xhtml", chapterXhtml("Chapter One", "Hello world."),
+                "OEBPS/chapter2.xhtml", chapterXhtml("Chapter Two", "Second chapter content.")));
+
+        ImportedBook book = importer.importFrom(epub);
+
+        assertThat(book.title()).isEqualTo("My Test Book");
+        assertThat(book.sections()).hasSize(2);
+        assertThat(book.sections().get(0).title()).isEqualTo("Chapter One");
+        assertThat(book.sections().get(0).html()).contains("Hello world.");
+        assertThat(book.sections().get(1).title()).isEqualTo("Chapter Two");
+        assertThat(book.sections().get(1).html()).contains("Second chapter content.");
+    }
+
+    @Test
+    void rejectsArchiveWithoutContainerXml() {
+        byte[] epub = buildEpub(Map.of("OEBPS/content.opf", opfXml()));
+
+        assertThatThrownBy(() -> importer.importFrom(epub)).isInstanceOf(ImportException.class);
+    }
+
+    @Test
+    void rejectsNonZipInput() {
+        assertThatThrownBy(() -> importer.importFrom("not a zip".getBytes(StandardCharsets.UTF_8)))
+                .isInstanceOf(ImportException.class);
+    }
+
+    private static String containerXml(String opfPath) {
+        return """
+                <?xml version="1.0"?>
+                <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                  <rootfiles>
+                    <rootfile full-path="%s" media-type="application/oebps-package+xml"/>
+                  </rootfiles>
+                </container>
+                """
+                .formatted(opfPath);
+    }
+
+    private static String opfXml() {
+        return """
+                <?xml version="1.0"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>My Test Book</dc:title>
+                  </metadata>
+                  <manifest>
+                    <item id="ch1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+                    <item id="ch2" href="chapter2.xhtml" media-type="application/xhtml+xml"/>
+                  </manifest>
+                  <spine>
+                    <itemref idref="ch1"/>
+                    <itemref idref="ch2"/>
+                  </spine>
+                </package>
+                """;
+    }
+
+    private static String chapterXhtml(String heading, String paragraph) {
+        return """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <html xmlns="http://www.w3.org/1999/xhtml">
+                <head><title>%s</title></head>
+                <body><h1>%s</h1><p>%s</p></body>
+                </html>
+                """
+                .formatted(heading, heading, paragraph);
+    }
+
+    private static byte[] buildEpub(Map<String, String> entries) {
+        try {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            try (ZipOutputStream zip = new ZipOutputStream(buffer, StandardCharsets.UTF_8)) {
+                for (Map.Entry<String, String> entry : entries.entrySet()) {
+                    zip.putNextEntry(new ZipEntry(entry.getKey()));
+                    zip.write(entry.getValue().getBytes(StandardCharsets.UTF_8));
+                    zip.closeEntry();
+                }
+            }
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+}
