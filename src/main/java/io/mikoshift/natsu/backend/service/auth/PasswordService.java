@@ -42,7 +42,10 @@ public class PasswordService {
         if (!request.password().equals(request.passwordConfirmation())) {
             throw ValidationException.of("password_confirmation", "doesn't match Password");
         }
+        // user arrives detached (loaded by the auth filter in an earlier, already-closed
+        // transaction), so mutating it here does nothing without an explicit save.
         user.setPasswordHash(passwordEncoder.encode(request.password()));
+        userRepository.save(user);
     }
 
     @Transactional

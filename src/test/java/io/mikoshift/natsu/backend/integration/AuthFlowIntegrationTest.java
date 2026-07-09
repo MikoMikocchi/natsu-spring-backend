@@ -3,6 +3,7 @@ package io.mikoshift.natsu.backend.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -183,5 +184,41 @@ class AuthFlowIntegrationTest {
 
         mockMvc.perform(get("/v1/auth/user").header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void changedPasswordActuallyPersistsAndOldPasswordStopsWorking() throws Exception {
+        String response = mockMvc.perform(post("/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Changer","email":"change-password@example.com","password":"password123","password_confirmation":"password123"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String token = JsonPath.read(response, "$.token");
+
+        mockMvc.perform(patch("/v1/auth/password")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"current_password":"password123","password":"newpassword456","password_confirmation":"newpassword456"}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"change-password@example.com","password":"password123"}
+                                """))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"change-password@example.com","password":"newpassword456"}
+                                """))
+                .andExpect(status().isOk());
     }
 }
