@@ -1,5 +1,6 @@
 package io.mikoshift.natsu.backend.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,6 +27,17 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors().forEach(fieldError -> errors
                 .computeIfAbsent(toSnakeCase(fieldError.getField()), key -> new ArrayList<>())
                 .add(fieldError.getDefaultMessage()));
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("errors", errors));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, List<String>> errors = new LinkedHashMap<>();
+        ex.getConstraintViolations().forEach(violation -> {
+            String path = violation.getPropertyPath().toString();
+            String field = path.contains(".") ? path.substring(path.lastIndexOf('.') + 1) : path;
+            errors.computeIfAbsent(toSnakeCase(field), key -> new ArrayList<>()).add(violation.getMessage());
+        });
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("errors", errors));
     }
 
