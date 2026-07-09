@@ -9,6 +9,7 @@ import io.mikoshift.natsu.backend.entity.User;
 import io.mikoshift.natsu.backend.exception.QuotaExceededException;
 import io.mikoshift.natsu.backend.exception.ValidationException;
 import io.mikoshift.natsu.backend.repository.DocumentRepository;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +31,8 @@ class StorageQuotaServiceTest {
     @BeforeEach
     void setUp() {
         quotaService = new StorageQuotaService(
-                documentRepository, new NatsuProperties("/tmp/natsu-test", MAX_PACKAGE_BYTES, MAX_STORAGE_PER_USER));
+                documentRepository,
+                new NatsuProperties("/tmp/natsu-test", MAX_PACKAGE_BYTES, MAX_STORAGE_PER_USER, List.of("*"), 5, 60));
         user = new User();
     }
 
