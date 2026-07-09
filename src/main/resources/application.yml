@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: natsu-spring-backend
+  datasource:
+    url: jdbc:postgresql://localhost:5432/natsu_development
+    username: natsu
+    password: natsu
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+server:
+  port: 3000
