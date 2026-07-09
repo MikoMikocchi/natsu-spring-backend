@@ -19,9 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Password change/forgot/reset. There is no transactional email pipeline in v1 (matching the
- * source Rails app's dev setup, which doesn't send real email either) -- the reset token is
- * logged instead of emailed.
+ * Password change/forgot/reset. There is no transactional email pipeline in v1 — the reset token
+ * is logged instead of emailed.
  */
 @Service
 @RequiredArgsConstructor

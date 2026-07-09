@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Issues, rotates, resolves and revokes opaque bearer tokens backed by {@link AuthToken} rows
- * (mirrors Rails' devise-api access/refresh token pair, without JWT).
+ * (opaque access/refresh token pair stored in the database, without JWT).
  */
 @Service
 @RequiredArgsConstructor

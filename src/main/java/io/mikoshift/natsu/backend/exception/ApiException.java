@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 
 /**
  * Base for exceptions rendered by GlobalExceptionHandler as
- * {@code {"errors": {"field": ["message"]}}}, matching the source Rails API's error shape.
+ * {@code {"errors": {"field": ["message"]}}}.
  */
 @Getter
 public class ApiException extends RuntimeException {
