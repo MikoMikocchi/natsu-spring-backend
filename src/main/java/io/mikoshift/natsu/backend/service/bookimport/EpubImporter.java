@@ -1,8 +1,8 @@
 package io.mikoshift.natsu.backend.service.bookimport;
 
 import io.mikoshift.natsu.backend.entity.Document.SourceFormat;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import io.mikoshift.natsu.backend.util.ZipUtils;
+import java.io.UncheckedIOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
@@ -11,8 +11,6 @@ import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -83,15 +81,10 @@ public class EpubImporter implements BookImporter {
     }
 
     private static Map<String, byte[]> readZipEntries(byte[] sourceBytes) {
-        Map<String, byte[]> entries = new LinkedHashMap<>();
-        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(sourceBytes), StandardCharsets.UTF_8)) {
-            ZipEntry entry;
-            while ((entry = zip.getNextEntry()) != null) {
-                if (!entry.isDirectory()) {
-                    entries.put(entry.getName(), zip.readAllBytes());
-                }
-            }
-        } catch (IOException e) {
+        Map<String, byte[]> entries;
+        try {
+            entries = ZipUtils.readEntries(sourceBytes);
+        } catch (UncheckedIOException e) {
             throw new ImportException("EPUB is not a valid zip archive", e);
         }
         if (entries.isEmpty()) {
