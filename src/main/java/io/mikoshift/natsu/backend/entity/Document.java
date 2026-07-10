@@ -50,6 +50,15 @@ public class Document {
     @Column(name = "import_error")
     private String importError;
 
+    /**
+     * Incremented each time the stale-import recovery job (see {@code bookimport.recovery}) acts on
+     * this document. Used to cap how many times recovery will touch the same stuck document before
+     * giving up permanently, so a document that can never actually recover doesn't get scanned and
+     * re-flagged forever.
+     */
+    @Column(name = "import_attempts", nullable = false)
+    private int importAttempts = 0;
+
     @Column(name = "imported_at", nullable = false)
     private long importedAt = 0L;
 
