@@ -30,9 +30,13 @@ class StorageQuotaServiceTest {
 
     @BeforeEach
     void setUp() {
+        NatsuProperties.RateLimit.Bucket bucket = new NatsuProperties.RateLimit.Bucket(5, 60);
+        NatsuProperties.RateLimit rateLimit =
+                new NatsuProperties.RateLimit(bucket, bucket, bucket, bucket, bucket, bucket);
         quotaService = new StorageQuotaService(
                 documentRepository,
-                new NatsuProperties("/tmp/natsu-test", MAX_PACKAGE_BYTES, MAX_STORAGE_PER_USER, List.of("*"), 5, 60));
+                new NatsuProperties(
+                        "/tmp/natsu-test", MAX_PACKAGE_BYTES, MAX_STORAGE_PER_USER, List.of("*"), rateLimit));
         user = new User();
     }
 

@@ -32,5 +32,24 @@ natsu:
   # Native Android clients don't send an Origin header, so CORS is mostly moot for them; kept
   # permissive and toggleable in case a browser-based tool or a future web client needs it.
   cors-allowed-origins: "*"
-  rate-limit-capacity: 5
-  rate-limit-window-seconds: 60
+  # Per-endpoint, per-dimension throttles (Bucket4j buckets, keyed and enforced in RateLimitFilter
+  # and the auth/password controllers). Numbers mirror the sibling Rails backend's Rack::Attack config.
+  rate-limit:
+    login:
+      capacity: 10
+      window-seconds: 60
+    login-email:
+      capacity: 5
+      window-seconds: 60
+    register:
+      capacity: 5
+      window-seconds: 60
+    password-reset:
+      capacity: 5
+      window-seconds: 60
+    refresh:
+      capacity: 10
+      window-seconds: 60
+    refresh-token:
+      capacity: 5
+      window-seconds: 60
