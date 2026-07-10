@@ -40,6 +40,37 @@ jobs:
           path: target/surefire-reports/
           retention-days: 7
 
+  lint:
+    # Runs in parallel with `test` and `dependency-check`: formatting is
+    # independent of both test correctness and dependency vulnerabilities,
+    # and it's fast (no Testcontainers/DB involved), so it shouldn't wait
+    # in line behind either. Invokes the `spotless:check` goal directly
+    # rather than `mvnw verify` so this job doesn't redundantly re-run the
+    # full test suite that the `test` job already covers.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 26
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '26'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
+
+      - name: Check code formatting
+        run: ./mvnw -B spotless:check
+
   dependency-check:
     # Runs in parallel with `test` rather than after it: the two jobs check
     # different things (test correctness vs. known-vulnerable dependencies)
