@@ -193,4 +193,52 @@
         </plugins>
     </build>
 
+    <profiles>
+        <!--
+            Dependency vulnerability scanning via OWASP dependency-check.
+            Deliberately kept out of the default build/test lifecycle because it
+            downloads/updates the NVD CVE database and can take a long time on a
+            cold cache. Run explicitly with:
+                ./mvnw -P security org.owasp:dependency-check-maven:check
+            or simply:
+                ./mvnw -P security verify
+        -->
+        <profile>
+            <id>security</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>12.2.2</version>
+                        <configuration>
+                            <!--
+                                Commercial teams commonly gate CI on CVSS >= 7 (High/Critical
+                                per the CVSS v3 severity bands) so that Medium/Low findings
+                                (which are numerous and often unactionable, e.g. only exploitable
+                                in unsupported configurations) don't block every build. Anything
+                                High/Critical fails the build; lower-severity findings still show
+                                up in the report for triage.
+                            -->
+                            <failBuildOnCVSS>7</failBuildOnCVSS>
+                            <suppressionFiles>
+                                <suppressionFile>${project.basedir}/dependency-check-suppressions.xml</suppressionFile>
+                            </suppressionFiles>
+                            <!--
+                                Read the NVD API key from the NVD_API_KEY environment variable
+                                rather than a Maven property, so it never appears in -D args,
+                                debug logs, or process listings. See ci.yml for how this is wired.
+                            -->
+                            <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+                            <formats>
+                                <format>HTML</format>
+                                <format>JUNIT</format>
+                            </formats>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>

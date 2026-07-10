@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!--
+        OWASP dependency-check suppression file.
+
+        Use this to suppress confirmed false positives or accepted-risk findings,
+        not to silence real vulnerabilities you haven't triaged yet.
+
+        Generate a suppression rule for a specific finding by running the scan
+        with the -DsuppressionFile output helper, or by hand using a <cve> or
+        <vulnerabilityName> match tied to a <packageUrl>/<gav> regex, e.g.:
+
+        <suppress>
+            <notes>False positive: dependency-check misidentifies this artifact as CVE-XXXX-YYYY</notes>
+            <packageUrl regex="true">^pkg:maven/some\.group/some-artifact@.*$</packageUrl>
+            <cve>CVE-XXXX-YYYY</cve>
+        </suppress>
+
+        See: https://jeremylong.github.io/DependencyCheck/general/suppression.html
+    -->
+</suppressions>
