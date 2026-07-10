@@ -78,6 +78,9 @@ natsu:
   # task that was processing them is simply gone otherwise). Runs on startup and periodically;
   # see StaleImportRecoveryService.
   book-import-recovery:
+    # Set to false to disable the scheduled scan entirely (e.g. in tests that don't want a
+    # background job touching PENDING documents they didn't ask it to look at).
+    enabled: true
     # How long a document may sit in PENDING before it's treated as stranded rather than a
     # genuinely slow, still-running import. Comfortably above realistic import durations.
     stale-after-minutes: 15

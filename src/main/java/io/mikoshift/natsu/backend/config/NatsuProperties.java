@@ -41,5 +41,5 @@ public record NatsuProperties(
      * {@code FAILED} so the user sees an actual error instead of a permanent "importing..." spinner.
      * See {@code io.mikoshift.natsu.backend.service.bookimport.StaleImportRecoveryService}.
      */
-    public record BookImportRecovery(int staleAfterMinutes, long checkIntervalMinutes, int maxAttempts) {}
+    public record BookImportRecovery(boolean enabled, int staleAfterMinutes, long checkIntervalMinutes, int maxAttempts) {}
 }

@@ -36,6 +36,10 @@ import org.springframework.test.context.TestPropertySource;
             "natsu.rate-limit.refresh-token.capacity=1000000",
             // Isolated from the default application.yml value so this test controls staleness
             // directly via how far back it backdates created_at, rather than depending on timing.
+            // Explicitly enabled (already the default) since this class specifically tests the
+            // recovery job's behavior -- unlike every other integration test class, which disables
+            // it to keep the scheduled scan from touching PENDING documents it never asked about.
+            "natsu.book-import-recovery.enabled=true",
             "natsu.book-import-recovery.stale-after-minutes=10",
             "natsu.book-import-recovery.max-attempts=3"
         })

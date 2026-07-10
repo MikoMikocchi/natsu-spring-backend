@@ -77,6 +77,9 @@ public class StaleImportRecoveryService {
             timeUnit = TimeUnit.MINUTES)
     public void recoverStaleImports() {
         NatsuProperties.BookImportRecovery config = properties.bookImportRecovery();
+        if (!config.enabled()) {
+            return;
+        }
         Instant cutoff = Instant.now().minus(config.staleAfterMinutes(), ChronoUnit.MINUTES);
 
         List<Document> candidates = documentRepository.findByStatusAndCreatedAtBefore(Document.Status.PENDING, cutoff);
