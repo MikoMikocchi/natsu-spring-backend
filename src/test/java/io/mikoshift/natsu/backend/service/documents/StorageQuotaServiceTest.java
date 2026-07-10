@@ -36,7 +36,13 @@ class StorageQuotaServiceTest {
         quotaService = new StorageQuotaService(
                 documentRepository,
                 new NatsuProperties(
-                        "/tmp/natsu-test", MAX_PACKAGE_BYTES, MAX_STORAGE_PER_USER, List.of("*"), rateLimit));
+                        "/tmp/natsu-test",
+                        MAX_PACKAGE_BYTES,
+                        MAX_STORAGE_PER_USER,
+                        List.of("*"),
+                        rateLimit,
+                        "http://localhost:3000/reset-password?token={token}",
+                        "noreply@example.com"));
         user = new User();
     }
 
