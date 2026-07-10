@@ -1,5 +1,6 @@
 package io.mikoshift.natsu.backend.service.auth;
 
+import io.mikoshift.natsu.backend.config.NatsuProperties;
 import io.mikoshift.natsu.backend.dto.request.ChangePasswordRequest;
 import io.mikoshift.natsu.backend.dto.request.ResetPasswordRequest;
 import io.mikoshift.natsu.backend.entity.User;
@@ -14,13 +15,17 @@ import java.time.Instant;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
- * Password change/forgot/reset. There is no transactional email pipeline in v1 — the reset token
- * is logged instead of emailed.
+ * Password change/forgot/reset.
  */
 @Service
 @RequiredArgsConstructor
@@ -33,6 +38,8 @@ public class PasswordService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final JavaMailSender mailSender;
+    private final NatsuProperties properties;
 
     @Transactional
     public void changePassword(User user, ChangePasswordRequest request) {
@@ -54,8 +61,57 @@ public class PasswordService {
             String rawToken = generateToken();
             user.setResetPasswordToken(hashToken(rawToken));
             user.setResetPasswordSentAt(Instant.now());
-            log.info("Password reset requested for {} (dev-mode, not emailed): token={}", user.getEmail(), rawToken);
+            // Deferred until the transaction actually commits: sending inline here would hold
+            // the DB connection open for the full SMTP round-trip, and -- worse -- could mail out
+            // a working-looking reset link whose token never made it to the database if the
+            // commit subsequently failed. registerSynchronization (rather than calling another
+            // @Transactional method on this bean) is used because self-invocation bypasses the
+            // proxy and silently runs in the same transaction anyway.
+            String userEmail = user.getEmail();
+            String userName = user.getName();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sendResetEmail(userEmail, userName, rawToken);
+                }
+            });
         });
+    }
+
+    /**
+     * Best-effort send: a mail transport failure (e.g. no local SMTP catcher running) is logged
+     * and swallowed rather than propagated. The reset token has already been committed regardless,
+     * and letting this bubble up would turn an SMTP outage into a signal that distinguishes
+     * "account exists" (500) from "account doesn't exist" (200) -- the opposite of what {@link
+     * #forgotPassword} is trying to guarantee. The controller always reports success either way.
+     */
+    private void sendResetEmail(String userEmail, String userName, String rawToken) {
+        String resetUrl = properties.passwordResetUrlTemplate().replace("{token}", rawToken);
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(properties.mailFrom());
+        message.setTo(userEmail);
+        message.setSubject("Reset your Natsu password");
+        message.setText(
+                """
+                Hello %s,
+
+                Someone requested a password reset for your Natsu account.
+
+                Reset your password by opening the link below:
+                %s
+
+                This link will expire in %d hours.
+
+                If you did not request a password reset, you can safely ignore this email.
+
+                — The Natsu Team
+                """
+                        .formatted(userName, resetUrl, RESET_TOKEN_TTL.toHours()));
+        try {
+            mailSender.send(message);
+        } catch (MailException e) {
+            log.error("Failed to send password reset email to {}", userEmail, e);
+        }
     }
 
     @Transactional

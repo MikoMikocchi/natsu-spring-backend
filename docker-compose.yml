@@ -10,5 +10,14 @@ services:
     volumes:
       - natsu_postgres_data:/var/lib/postgresql/data
 
+  # Dev-only fake SMTP server -- catches every email the app sends instead of delivering it.
+  # Web UI at http://localhost:8025 shows password reset emails as they'd actually render, with
+  # zero real SMTP setup. Equivalent to letter_opener_web on the sibling Rails backend.
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   natsu_postgres_data:
