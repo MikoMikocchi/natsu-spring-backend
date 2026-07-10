@@ -20,7 +20,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,31 +28,38 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class DictionaryController {
 
-    private final DictionaryListService dictionaryListService;
-    private final DictionaryToggleService dictionaryToggleService;
-    private final DictionaryLookupService dictionaryLookupService;
-    private final ServerTimeService serverTimeService;
+  private final DictionaryListService dictionaryListService;
+  private final DictionaryToggleService dictionaryToggleService;
+  private final DictionaryLookupService dictionaryLookupService;
+  private final ServerTimeService serverTimeService;
 
-    @GetMapping("/v1/dictionaries")
-    DictionaryIndexResponse index(
-            @AuthenticationPrincipal User user,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "50") int perPage) {
-        Page<Dictionary> result = dictionaryListService.list(page, perPage);
-        var dictionaries = result.getContent().stream()
-                .map(dictionary -> DictionaryResponse.from(dictionary, dictionaryListService.isEnabled(user, dictionary)))
-                .toList();
-        return new DictionaryIndexResponse(dictionaries, PaginationResponse.from(result), serverTimeService.nowMs());
-    }
+  @GetMapping("/v1/dictionaries")
+  DictionaryIndexResponse index(
+      @AuthenticationPrincipal User user,
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "50") int perPage) {
+    Page<Dictionary> result = dictionaryListService.list(page, perPage);
+    var dictionaries =
+        result.getContent().stream()
+            .map(
+                dictionary ->
+                    DictionaryResponse.from(
+                        dictionary, dictionaryListService.isEnabled(user, dictionary)))
+            .toList();
+    return new DictionaryIndexResponse(
+        dictionaries, PaginationResponse.from(result), serverTimeService.nowMs());
+  }
 
-    @PatchMapping("/v1/dictionaries/{id}/toggle")
-    ResponseEntity<Void> toggle(@AuthenticationPrincipal User user, @PathVariable UUID id) {
-        dictionaryToggleService.toggle(user, id);
-        return ResponseEntity.noContent().build();
-    }
+  @PatchMapping("/v1/dictionaries/{id}/toggle")
+  ResponseEntity<Void> toggle(@AuthenticationPrincipal User user, @PathVariable UUID id) {
+    dictionaryToggleService.toggle(user, id);
+    return ResponseEntity.noContent().build();
+  }
 
-    @GetMapping("/v1/dictionary/lookup")
-    DictionaryLookupResponse lookup(@AuthenticationPrincipal User user, @RequestParam @NotBlank String q) {
-        return new DictionaryLookupResponse(dictionaryLookupService.lookup(user, q), serverTimeService.nowMs());
-    }
+  @GetMapping("/v1/dictionary/lookup")
+  DictionaryLookupResponse lookup(
+      @AuthenticationPrincipal User user, @RequestParam @NotBlank String q) {
+    return new DictionaryLookupResponse(
+        dictionaryLookupService.lookup(user, q), serverTimeService.nowMs());
+  }
 }

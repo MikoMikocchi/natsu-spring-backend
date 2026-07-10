@@ -17,46 +17,52 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DocumentQueryService {
 
-    private static final int SNIPPET_CONTEXT_CHARS = 40;
-    private static final int MAX_MATCHES_PER_DOCUMENT = 5;
+  private static final int SNIPPET_CONTEXT_CHARS = 40;
+  private static final int MAX_MATCHES_PER_DOCUMENT = 5;
 
-    private final DocumentRepository documentRepository;
+  private final DocumentRepository documentRepository;
 
-    @Transactional(readOnly = true)
-    public List<Document> listSince(User user, long since, Integer limit) {
-        List<Document> documents = documentRepository.findByUserAndUpdatedAtMsGreaterThanOrderByUpdatedAtMsAsc(user, since);
-        return limit != null && limit < documents.size() ? documents.subList(0, limit) : documents;
+  @Transactional(readOnly = true)
+  public List<Document> listSince(User user, long since, Integer limit) {
+    List<Document> documents =
+        documentRepository.findByUserAndUpdatedAtMsGreaterThanOrderByUpdatedAtMsAsc(user, since);
+    return limit != null && limit < documents.size() ? documents.subList(0, limit) : documents;
+  }
+
+  @Transactional(readOnly = true)
+  public Document get(User user, UUID id) {
+    return documentRepository
+        .findByIdAndUser(id, user)
+        .orElseThrow(() -> new NotFoundException("Document not found"));
+  }
+
+  @Transactional(readOnly = true)
+  public List<DocumentSearchResult> search(User user, String query) {
+    return documentRepository.searchByUserAndQuery(user, query).stream()
+        .map(document -> buildSearchResult(document, query))
+        .toList();
+  }
+
+  private DocumentSearchResult buildSearchResult(Document document, String query) {
+    String haystack =
+        document.getTitle()
+            + "\n"
+            + (document.getSearchText() != null ? document.getSearchText() : "");
+    String lowerHaystack = haystack.toLowerCase();
+    String lowerQuery = query.toLowerCase();
+
+    List<DocumentSearchMatch> matches = new ArrayList<>();
+    int from = 0;
+    while (matches.size() < MAX_MATCHES_PER_DOCUMENT) {
+      int index = lowerHaystack.indexOf(lowerQuery, from);
+      if (index < 0) {
+        break;
+      }
+      int start = Math.max(0, index - SNIPPET_CONTEXT_CHARS);
+      int end = Math.min(haystack.length(), index + lowerQuery.length() + SNIPPET_CONTEXT_CHARS);
+      matches.add(new DocumentSearchMatch(index, haystack.substring(start, end)));
+      from = index + lowerQuery.length();
     }
-
-    @Transactional(readOnly = true)
-    public Document get(User user, UUID id) {
-        return documentRepository.findByIdAndUser(id, user).orElseThrow(() -> new NotFoundException("Document not found"));
-    }
-
-    @Transactional(readOnly = true)
-    public List<DocumentSearchResult> search(User user, String query) {
-        return documentRepository.searchByUserAndQuery(user, query).stream()
-                .map(document -> buildSearchResult(document, query))
-                .toList();
-    }
-
-    private DocumentSearchResult buildSearchResult(Document document, String query) {
-        String haystack = document.getTitle() + "\n" + (document.getSearchText() != null ? document.getSearchText() : "");
-        String lowerHaystack = haystack.toLowerCase();
-        String lowerQuery = query.toLowerCase();
-
-        List<DocumentSearchMatch> matches = new ArrayList<>();
-        int from = 0;
-        while (matches.size() < MAX_MATCHES_PER_DOCUMENT) {
-            int index = lowerHaystack.indexOf(lowerQuery, from);
-            if (index < 0) {
-                break;
-            }
-            int start = Math.max(0, index - SNIPPET_CONTEXT_CHARS);
-            int end = Math.min(haystack.length(), index + lowerQuery.length() + SNIPPET_CONTEXT_CHARS);
-            matches.add(new DocumentSearchMatch(index, haystack.substring(start, end)));
-            from = index + lowerQuery.length();
-        }
-        return new DocumentSearchResult(document.getId(), document.getTitle(), matches);
-    }
+    return new DocumentSearchResult(document.getId(), document.getTitle(), matches);
+  }
 }

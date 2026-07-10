@@ -23,45 +23,45 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 public class AuthToken {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    // EAGER: every caller that resolves an AuthToken (the bearer-token auth filter, in
-    // particular) immediately dereferences its User, and open-in-view is disabled, so a LAZY
-    // proxy here would outlive the transaction and blow up the first time something outside a
-    // @Transactional method touches it (e.g. Spring's access-log username lookup).
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+  // EAGER: every caller that resolves an AuthToken (the bearer-token auth filter, in
+  // particular) immediately dereferences its User, and open-in-view is disabled, so a LAZY
+  // proxy here would outlive the transaction and blow up the first time something outside a
+  // @Transactional method touches it (e.g. Spring's access-log username lookup).
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
-    @Column(name = "access_token", nullable = false, unique = true)
-    private String accessToken;
+  @Column(name = "access_token", nullable = false, unique = true)
+  private String accessToken;
 
-    @Column(name = "refresh_token", nullable = false, unique = true)
-    private String refreshToken;
+  @Column(name = "refresh_token", nullable = false, unique = true)
+  private String refreshToken;
 
-    @Column(name = "previous_refresh_token", unique = true)
-    private String previousRefreshToken;
+  @Column(name = "previous_refresh_token", unique = true)
+  private String previousRefreshToken;
 
-    @Column(name = "access_token_expires_at", nullable = false)
-    private Instant accessTokenExpiresAt;
+  @Column(name = "access_token_expires_at", nullable = false)
+  private Instant accessTokenExpiresAt;
 
-    @Column(name = "refresh_token_expires_at", nullable = false)
-    private Instant refreshTokenExpiresAt;
+  @Column(name = "refresh_token_expires_at", nullable = false)
+  private Instant refreshTokenExpiresAt;
 
-    /** Device name, taken from the User-Agent header at issue time. */
-    @Column(name = "name")
-    private String name;
+  /** Device name, taken from the User-Agent header at issue time. */
+  @Column(name = "name")
+  private String name;
 
-    @Column(name = "revoked_at")
-    private Instant revokedAt;
+  @Column(name = "revoked_at")
+  private Instant revokedAt;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }

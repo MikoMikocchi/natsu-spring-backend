@@ -10,17 +10,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class BookImporterRegistry {
 
-    private final Map<SourceFormat, BookImporter> importers;
+  private final Map<SourceFormat, BookImporter> importers;
 
-    public BookImporterRegistry(List<BookImporter> importers) {
-        this.importers = importers.stream().collect(Collectors.toMap(BookImporter::supportedFormat, Function.identity()));
-    }
+  public BookImporterRegistry(List<BookImporter> importers) {
+    this.importers =
+        importers.stream()
+            .collect(Collectors.toMap(BookImporter::supportedFormat, Function.identity()));
+  }
 
-    public BookImporter forFormat(SourceFormat format) {
-        BookImporter importer = importers.get(format);
-        if (importer == null) {
-            throw new ImportException("No importer registered for format " + format);
-        }
-        return importer;
+  public BookImporter forFormat(SourceFormat format) {
+    BookImporter importer = importers.get(format);
+    if (importer == null) {
+      throw new ImportException("No importer registered for format " + format);
     }
+    return importer;
+  }
 }

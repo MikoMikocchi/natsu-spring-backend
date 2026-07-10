@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface DictionaryRepository extends JpaRepository<Dictionary, UUID> {
 
-    Optional<Dictionary> findByCatalogId(String catalogId);
+  Optional<Dictionary> findByCatalogId(String catalogId);
 }
