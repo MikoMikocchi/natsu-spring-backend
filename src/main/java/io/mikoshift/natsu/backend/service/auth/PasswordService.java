@@ -21,6 +21,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * Password change/forgot/reset.
@@ -59,22 +61,35 @@ public class PasswordService {
             String rawToken = generateToken();
             user.setResetPasswordToken(hashToken(rawToken));
             user.setResetPasswordSentAt(Instant.now());
-            sendResetEmail(user, rawToken);
+            // Deferred until the transaction actually commits: sending inline here would hold
+            // the DB connection open for the full SMTP round-trip, and -- worse -- could mail out
+            // a working-looking reset link whose token never made it to the database if the
+            // commit subsequently failed. registerSynchronization (rather than calling another
+            // @Transactional method on this bean) is used because self-invocation bypasses the
+            // proxy and silently runs in the same transaction anyway.
+            String userEmail = user.getEmail();
+            String userName = user.getName();
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sendResetEmail(userEmail, userName, rawToken);
+                }
+            });
         });
     }
 
     /**
      * Best-effort send: a mail transport failure (e.g. no local SMTP catcher running) is logged
-     * and swallowed rather than propagated. The reset token has already been persisted regardless,
+     * and swallowed rather than propagated. The reset token has already been committed regardless,
      * and letting this bubble up would turn an SMTP outage into a signal that distinguishes
      * "account exists" (500) from "account doesn't exist" (200) -- the opposite of what {@link
      * #forgotPassword} is trying to guarantee. The controller always reports success either way.
      */
-    private void sendResetEmail(User user, String rawToken) {
+    private void sendResetEmail(String userEmail, String userName, String rawToken) {
         String resetUrl = properties.passwordResetUrlTemplate().replace("{token}", rawToken);
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(properties.mailFrom());
-        message.setTo(user.getEmail());
+        message.setTo(userEmail);
         message.setSubject("Reset your Natsu password");
         message.setText(
                 """
@@ -91,11 +106,11 @@ public class PasswordService {
 
                 — The Natsu Team
                 """
-                        .formatted(user.getName(), resetUrl, RESET_TOKEN_TTL.toHours()));
+                        .formatted(userName, resetUrl, RESET_TOKEN_TTL.toHours()));
         try {
             mailSender.send(message);
         } catch (MailException e) {
-            log.error("Failed to send password reset email to {}", user.getEmail(), e);
+            log.error("Failed to send password reset email to {}", userEmail, e);
         }
     }
 
