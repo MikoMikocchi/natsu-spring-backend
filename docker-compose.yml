@@ -19,5 +19,31 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  # The Spring Boot app itself, built from the multi-stage Dockerfile in this directory.
+  # Not meant to replace `./mvnw spring-boot:run` for day-to-day dev (no hot reload, and every
+  # source change means a rebuild) -- this is mainly for exercising the production container
+  # image locally, e.g. before a real deploy.
+  app:
+    build: .
+    depends_on:
+      - postgres
+      # Not strictly required for startup (mail sending is best-effort), but the app does try to
+      # talk to an SMTP host, so bring it up alongside postgres for a working local stack.
+      - mailpit
+    ports:
+      - "3000:3000"
+    environment:
+      # Service name "postgres", not "localhost" -- this resolves via Docker Compose's default
+      # network, unlike the localhost default baked into application.yml for bare-metal/IDE runs.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/natsu_development
+      SPRING_DATASOURCE_USERNAME: natsu
+      SPRING_DATASOURCE_PASSWORD: natsu
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: 1025
+    # Dev-only stack -- if the app crashes, that's a signal to look at logs, not something we want
+    # silently restarted in a loop. "no" (the Compose default) is fine here; leaving it explicit
+    # documents that this was a deliberate choice, not an oversight.
+    restart: "no"
+
 volumes:
   natsu_postgres_data:
