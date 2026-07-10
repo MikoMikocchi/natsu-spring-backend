@@ -1,5 +1,6 @@
 package io.mikoshift.natsu.backend.controller.v1;
 
+import io.mikoshift.natsu.backend.config.NatsuProperties;
 import io.mikoshift.natsu.backend.dto.request.DeleteAccountRequest;
 import io.mikoshift.natsu.backend.dto.request.LoginRequest;
 import io.mikoshift.natsu.backend.dto.request.RefreshRequest;
@@ -9,6 +10,8 @@ import io.mikoshift.natsu.backend.dto.response.UserResponse;
 import io.mikoshift.natsu.backend.dto.response.UserShowResponse;
 import io.mikoshift.natsu.backend.entity.AuthToken;
 import io.mikoshift.natsu.backend.entity.User;
+import io.mikoshift.natsu.backend.exception.RateLimitExceededException;
+import io.mikoshift.natsu.backend.security.RateLimiter;
 import io.mikoshift.natsu.backend.service.ServerTimeService;
 import io.mikoshift.natsu.backend.service.auth.AccountDeletionService;
 import io.mikoshift.natsu.backend.service.auth.AuthService;
@@ -34,6 +37,8 @@ public class AuthController {
     private final AuthService authService;
     private final AccountDeletionService accountDeletionService;
     private final ServerTimeService serverTimeService;
+    private final RateLimiter rateLimiter;
+    private final NatsuProperties natsuProperties;
 
     @PostMapping("/register")
     ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
@@ -43,6 +48,7 @@ public class AuthController {
 
     @PostMapping("/login")
     AuthResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        checkRateLimit("login-email", request.email().trim().toLowerCase(), natsuProperties.rateLimit().loginEmail());
         return toAuthResponse(authService.login(request, deviceName(httpRequest)));
     }
 
@@ -54,6 +60,7 @@ public class AuthController {
 
     @PostMapping("/refresh")
     AuthResponse refresh(@Valid @RequestBody RefreshRequest request) {
+        checkRateLimit("refresh-token", request.refreshToken(), natsuProperties.rateLimit().refreshToken());
         return toAuthResponse(authService.refresh(request.refreshToken()));
     }
 
@@ -75,6 +82,12 @@ public class AuthController {
                 result.token().getRefreshToken(),
                 UserResponse.from(result.user()),
                 serverTimeService.nowMs());
+    }
+
+    private void checkRateLimit(String category, String key, NatsuProperties.RateLimit.Bucket config) {
+        if (!rateLimiter.tryConsume(category, key, config)) {
+            throw new RateLimitExceededException(config.windowSeconds());
+        }
     }
 
     private static String deviceName(HttpServletRequest request) {
