@@ -13,8 +13,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * Seeds the dictionary catalog from a Yomitan archive on disk. Only active under the {@code seed}
- * profile, so it never runs as part of normal request-serving startup:
- * {@code ./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=seed --seed.file=/path/to/dict.zip"}.
+ * profile, so it never runs as part of normal request-serving startup: {@code ./mvnw
+ * spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=seed
+ * --seed.file=/path/to/dict.zip"}.
  */
 @Component
 @Profile("seed")
@@ -22,25 +23,31 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class DictionarySeedRunner implements CommandLineRunner {
 
-    private final TermBankImportService termBankImportService;
+  private final TermBankImportService termBankImportService;
 
-    @Value("${seed.catalog-id:}")
-    private String catalogId;
+  @Value("${seed.catalog-id:}")
+  private String catalogId;
 
-    @Value("${seed.file:}")
-    private String filePath;
+  @Value("${seed.file:}")
+  private String filePath;
 
-    @Override
-    public void run(String... args) throws Exception {
-        if (filePath.isBlank()) {
-            log.warn("seed profile is active but no --seed.file was provided; skipping dictionary seed");
-            return;
-        }
-        byte[] bytes = Files.readAllBytes(Path.of(filePath));
-        String effectiveCatalogId =
-                catalogId.isBlank() ? Path.of(filePath).getFileName().toString().replaceFirst("\\.zip$", "") : catalogId;
-
-        Dictionary dictionary = termBankImportService.importZip(effectiveCatalogId, bytes);
-        log.info("Seeded dictionary '{}' ({} terms) from {}", dictionary.getTitle(), dictionary.getTermCount(), filePath);
+  @Override
+  public void run(String... args) throws Exception {
+    if (filePath.isBlank()) {
+      log.warn("seed profile is active but no --seed.file was provided; skipping dictionary seed");
+      return;
     }
+    byte[] bytes = Files.readAllBytes(Path.of(filePath));
+    String effectiveCatalogId =
+        catalogId.isBlank()
+            ? Path.of(filePath).getFileName().toString().replaceFirst("\\.zip$", "")
+            : catalogId;
+
+    Dictionary dictionary = termBankImportService.importZip(effectiveCatalogId, bytes);
+    log.info(
+        "Seeded dictionary '{}' ({} terms) from {}",
+        dictionary.getTitle(),
+        dictionary.getTermCount(),
+        filePath);
+  }
 }

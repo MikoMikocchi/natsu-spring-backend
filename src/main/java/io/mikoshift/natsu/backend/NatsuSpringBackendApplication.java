@@ -13,8 +13,7 @@ import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoCon
 @EnableConfigurationProperties(NatsuProperties.class)
 public class NatsuSpringBackendApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(NatsuSpringBackendApplication.class, args);
-    }
-
+  public static void main(String[] args) {
+    SpringApplication.run(NatsuSpringBackendApplication.class, args);
+  }
 }

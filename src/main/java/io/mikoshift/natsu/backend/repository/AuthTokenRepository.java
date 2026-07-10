@@ -8,13 +8,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AuthTokenRepository extends JpaRepository<AuthToken, Long> {
 
-    Optional<AuthToken> findByAccessTokenAndRevokedAtIsNull(String accessToken);
+  Optional<AuthToken> findByAccessTokenAndRevokedAtIsNull(String accessToken);
 
-    Optional<AuthToken> findByRefreshTokenAndRevokedAtIsNull(String refreshToken);
+  Optional<AuthToken> findByRefreshTokenAndRevokedAtIsNull(String refreshToken);
 
-    Optional<AuthToken> findByPreviousRefreshTokenAndRevokedAtIsNull(String previousRefreshToken);
+  Optional<AuthToken> findByPreviousRefreshTokenAndRevokedAtIsNull(String previousRefreshToken);
 
-    List<AuthToken> findAllByUserAndRevokedAtIsNullOrderByCreatedAtDesc(User user);
+  List<AuthToken> findAllByUserAndRevokedAtIsNullOrderByCreatedAtDesc(User user);
 
-    Optional<AuthToken> findByIdAndUser(Long id, User user);
+  Optional<AuthToken> findByIdAndUser(Long id, User user);
 }

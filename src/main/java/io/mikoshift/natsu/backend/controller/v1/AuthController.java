@@ -34,67 +34,73 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService authService;
-    private final AccountDeletionService accountDeletionService;
-    private final ServerTimeService serverTimeService;
-    private final RateLimiter rateLimiter;
-    private final NatsuProperties natsuProperties;
+  private final AuthService authService;
+  private final AccountDeletionService accountDeletionService;
+  private final ServerTimeService serverTimeService;
+  private final RateLimiter rateLimiter;
+  private final NatsuProperties natsuProperties;
 
-    @PostMapping("/register")
-    ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
-        AuthService.AuthResult result = authService.register(request, deviceName(httpRequest));
-        return ResponseEntity.status(HttpStatus.CREATED).body(toAuthResponse(result));
-    }
+  @PostMapping("/register")
+  ResponseEntity<AuthResponse> register(
+      @Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+    AuthService.AuthResult result = authService.register(request, deviceName(httpRequest));
+    return ResponseEntity.status(HttpStatus.CREATED).body(toAuthResponse(result));
+  }
 
-    @PostMapping("/login")
-    AuthResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-        checkRateLimit("login-email", request.email().trim().toLowerCase(), natsuProperties.rateLimit().loginEmail());
-        return toAuthResponse(authService.login(request, deviceName(httpRequest)));
-    }
+  @PostMapping("/login")
+  AuthResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+    checkRateLimit(
+        "login-email",
+        request.email().trim().toLowerCase(),
+        natsuProperties.rateLimit().loginEmail());
+    return toAuthResponse(authService.login(request, deviceName(httpRequest)));
+  }
 
-    @PostMapping("/logout")
-    ResponseEntity<Void> logout(Authentication authentication) {
-        authService.logout((AuthToken) authentication.getCredentials());
-        return ResponseEntity.noContent().build();
-    }
+  @PostMapping("/logout")
+  ResponseEntity<Void> logout(Authentication authentication) {
+    authService.logout((AuthToken) authentication.getCredentials());
+    return ResponseEntity.noContent().build();
+  }
 
-    @PostMapping("/refresh")
-    AuthResponse refresh(@Valid @RequestBody RefreshRequest request) {
-        checkRateLimit("refresh-token", request.refreshToken(), natsuProperties.rateLimit().refreshToken());
-        return toAuthResponse(authService.refresh(request.refreshToken()));
-    }
+  @PostMapping("/refresh")
+  AuthResponse refresh(@Valid @RequestBody RefreshRequest request) {
+    checkRateLimit(
+        "refresh-token", request.refreshToken(), natsuProperties.rateLimit().refreshToken());
+    return toAuthResponse(authService.refresh(request.refreshToken()));
+  }
 
-    @GetMapping("/user")
-    UserShowResponse currentUser(@AuthenticationPrincipal User user) {
-        return new UserShowResponse(UserResponse.from(user), serverTimeService.nowMs());
-    }
+  @GetMapping("/user")
+  UserShowResponse currentUser(@AuthenticationPrincipal User user) {
+    return new UserShowResponse(UserResponse.from(user), serverTimeService.nowMs());
+  }
 
-    @DeleteMapping("/account")
-    ResponseEntity<Void> deleteAccount(
-            @AuthenticationPrincipal User user, @Valid @RequestBody DeleteAccountRequest request) {
-        accountDeletionService.deleteAccount(user, request.password());
-        return ResponseEntity.noContent().build();
-    }
+  @DeleteMapping("/account")
+  ResponseEntity<Void> deleteAccount(
+      @AuthenticationPrincipal User user, @Valid @RequestBody DeleteAccountRequest request) {
+    accountDeletionService.deleteAccount(user, request.password());
+    return ResponseEntity.noContent().build();
+  }
 
-    private AuthResponse toAuthResponse(AuthService.AuthResult result) {
-        return new AuthResponse(
-                result.token().getAccessToken(),
-                result.token().getRefreshToken(),
-                UserResponse.from(result.user()),
-                serverTimeService.nowMs());
-    }
+  private AuthResponse toAuthResponse(AuthService.AuthResult result) {
+    return new AuthResponse(
+        result.token().getAccessToken(),
+        result.token().getRefreshToken(),
+        UserResponse.from(result.user()),
+        serverTimeService.nowMs());
+  }
 
-    private void checkRateLimit(String category, String key, NatsuProperties.RateLimit.Bucket config) {
-        if (!rateLimiter.tryConsume(category, key, config)) {
-            throw new RateLimitExceededException(config.windowSeconds());
-        }
+  private void checkRateLimit(
+      String category, String key, NatsuProperties.RateLimit.Bucket config) {
+    if (!rateLimiter.tryConsume(category, key, config)) {
+      throw new RateLimitExceededException(config.windowSeconds());
     }
+  }
 
-    private static String deviceName(HttpServletRequest request) {
-        String userAgent = request.getHeader("User-Agent");
-        if (userAgent == null || userAgent.isBlank()) {
-            return "Unknown device";
-        }
-        return userAgent.length() > 255 ? userAgent.substring(0, 255) : userAgent;
+  private static String deviceName(HttpServletRequest request) {
+    String userAgent = request.getHeader("User-Agent");
+    if (userAgent == null || userAgent.isBlank()) {
+      return "Unknown device";
     }
+    return userAgent.length() > 255 ? userAgent.substring(0, 255) : userAgent;
+  }
 }

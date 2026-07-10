@@ -19,58 +19,60 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class StorageQuotaServiceTest {
 
-    private static final long MAX_PACKAGE_BYTES = 1000;
-    private static final long MAX_STORAGE_PER_USER = 5000;
+  private static final long MAX_PACKAGE_BYTES = 1000;
+  private static final long MAX_STORAGE_PER_USER = 5000;
 
-    @Mock
-    private DocumentRepository documentRepository;
+  @Mock private DocumentRepository documentRepository;
 
-    private StorageQuotaService quotaService;
-    private User user;
+  private StorageQuotaService quotaService;
+  private User user;
 
-    @BeforeEach
-    void setUp() {
-        NatsuProperties.RateLimit.Bucket bucket = new NatsuProperties.RateLimit.Bucket(5, 60);
-        NatsuProperties.RateLimit rateLimit =
-                new NatsuProperties.RateLimit(bucket, bucket, bucket, bucket, bucket, bucket);
-        quotaService = new StorageQuotaService(
-                documentRepository,
-                new NatsuProperties(
-                        "/tmp/natsu-test",
-                        MAX_PACKAGE_BYTES,
-                        MAX_STORAGE_PER_USER,
-                        List.of("*"),
-                        rateLimit,
-                        "http://localhost:3000/reset-password?token={token}",
-                        "noreply@example.com",
-                        new NatsuProperties.BookImportRecovery(true, 15, 5, 3)));
-        user = new User();
-    }
+  @BeforeEach
+  void setUp() {
+    NatsuProperties.RateLimit.Bucket bucket = new NatsuProperties.RateLimit.Bucket(5, 60);
+    NatsuProperties.RateLimit rateLimit =
+        new NatsuProperties.RateLimit(bucket, bucket, bucket, bucket, bucket, bucket);
+    quotaService =
+        new StorageQuotaService(
+            documentRepository,
+            new NatsuProperties(
+                "/tmp/natsu-test",
+                MAX_PACKAGE_BYTES,
+                MAX_STORAGE_PER_USER,
+                List.of("*"),
+                rateLimit,
+                "http://localhost:3000/reset-password?token={token}",
+                "noreply@example.com",
+                new NatsuProperties.BookImportRecovery(true, 15, 5, 3)));
+    user = new User();
+  }
 
-    @Test
-    void rejectsSingleUploadOverTheMaxPackageSize() {
-        assertThatThrownBy(() -> quotaService.checkUploadSize(MAX_PACKAGE_BYTES + 1))
-                .isInstanceOf(ValidationException.class);
-    }
+  @Test
+  void rejectsSingleUploadOverTheMaxPackageSize() {
+    assertThatThrownBy(() -> quotaService.checkUploadSize(MAX_PACKAGE_BYTES + 1))
+        .isInstanceOf(ValidationException.class);
+  }
 
-    @Test
-    void allowsSingleUploadAtExactlyTheMaxPackageSize() {
-        assertThatCode(() -> quotaService.checkUploadSize(MAX_PACKAGE_BYTES)).doesNotThrowAnyException();
-    }
+  @Test
+  void allowsSingleUploadAtExactlyTheMaxPackageSize() {
+    assertThatCode(() -> quotaService.checkUploadSize(MAX_PACKAGE_BYTES))
+        .doesNotThrowAnyException();
+  }
 
-    @Test
-    void rejectsWhenTotalUsageWouldExceedThePerUserQuota() {
-        when(documentRepository.sumPackageSizeBytesByUser(user)).thenReturn(4500L);
+  @Test
+  void rejectsWhenTotalUsageWouldExceedThePerUserQuota() {
+    when(documentRepository.sumPackageSizeBytesByUser(user)).thenReturn(4500L);
 
-        assertThatThrownBy(() -> quotaService.checkUserQuota(user, 600, 0)).isInstanceOf(QuotaExceededException.class);
-    }
+    assertThatThrownBy(() -> quotaService.checkUserQuota(user, 600, 0))
+        .isInstanceOf(QuotaExceededException.class);
+  }
 
-    @Test
-    void excludesTheReplacedDocumentsCurrentSizeFromTheUsageTotal() {
-        // 4500 already used, of which 400 belongs to the document being replaced; replacing it
-        // with a 600-byte package brings usage to 4500 - 400 + 600 = 4700, under the 5000 cap.
-        when(documentRepository.sumPackageSizeBytesByUser(user)).thenReturn(4500L);
+  @Test
+  void excludesTheReplacedDocumentsCurrentSizeFromTheUsageTotal() {
+    // 4500 already used, of which 400 belongs to the document being replaced; replacing it
+    // with a 600-byte package brings usage to 4500 - 400 + 600 = 4700, under the 5000 cap.
+    when(documentRepository.sumPackageSizeBytesByUser(user)).thenReturn(4500L);
 
-        assertThatCode(() -> quotaService.checkUserQuota(user, 600, 400)).doesNotThrowAnyException();
-    }
+    assertThatCode(() -> quotaService.checkUserQuota(user, 600, 400)).doesNotThrowAnyException();
+  }
 }

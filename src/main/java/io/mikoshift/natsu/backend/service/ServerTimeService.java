@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ServerTimeService {
 
-    public long nowMs() {
-        return Instant.now().toEpochMilli();
-    }
+  public long nowMs() {
+    return Instant.now().toEpochMilli();
+  }
 }

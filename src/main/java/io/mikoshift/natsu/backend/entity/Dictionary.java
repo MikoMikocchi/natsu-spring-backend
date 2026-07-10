@@ -19,26 +19,25 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 public class Dictionary {
 
-    @Id
-    private UUID id;
+  @Id private UUID id;
 
-    @Column(name = "catalog_id", nullable = false, unique = true)
-    private String catalogId;
+  @Column(name = "catalog_id", nullable = false, unique = true)
+  private String catalogId;
 
-    @Column(nullable = false)
-    private String title;
+  @Column(nullable = false)
+  private String title;
 
-    @Column(nullable = false)
-    private String revision = "1";
+  @Column(nullable = false)
+  private String revision = "1";
 
-    @Column(name = "term_count", nullable = false)
-    private int termCount = 0;
+  @Column(name = "term_count", nullable = false)
+  private int termCount = 0;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }
