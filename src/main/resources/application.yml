@@ -21,6 +21,20 @@ spring:
     multipart:
       max-file-size: 55MB
       max-request-size: 55MB
+  mail:
+    # Local dev default: Mailpit (see docker-compose.yml), a fake SMTP catcher with a web UI at
+    # http://localhost:8025 -- no real credentials needed, nothing leaves the machine. Override
+    # host/port/username/password via env vars for staging/production (a real SMTP provider).
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${SPRING_MAIL_SMTP_STARTTLS:false}
 
 server:
   port: 3000
@@ -32,6 +46,13 @@ natsu:
   # Native Android clients don't send an Origin header, so CORS is mostly moot for them; kept
   # permissive and toggleable in case a browser-based tool or a future web client needs it.
   cors-allowed-origins: "*"
+  # Deep-link/web URL used in password reset emails; "{token}" is replaced with the raw reset
+  # token. Placeholder until a real web/deep-link frontend exists -- override with
+  # NATSU_PASSWORD_RESET_URL_TEMPLATE in any real deployment.
+  password-reset-url-template: ${NATSU_PASSWORD_RESET_URL_TEMPLATE:http://localhost:3000/reset-password?token={token}}
+  # "From" address on outgoing mail (password reset, etc). Override in production via env var --
+  # most SMTP providers reject mail sent from an address they haven't verified.
+  mail-from: ${NATSU_MAIL_FROM:noreply@example.com}
   # Per-endpoint, per-dimension throttles (Bucket4j buckets, keyed and enforced in RateLimitFilter
   # and the auth/password controllers). Numbers mirror the sibling Rails backend's Rack::Attack config.
   rate-limit:

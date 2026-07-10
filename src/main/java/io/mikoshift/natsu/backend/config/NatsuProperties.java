@@ -9,7 +9,14 @@ public record NatsuProperties(
         long maxPackageBytes,
         long maxStorageBytesPerUser,
         List<String> corsAllowedOrigins,
-        RateLimit rateLimit) {
+        RateLimit rateLimit,
+        // Deep-link/web URL the mobile app (or a future web client) resolves the reset token
+        // against. "{token}" is substituted with the raw (unhashed) reset token. No real web
+        // frontend exists yet, so this defaults to a clearly-a-placeholder localhost URL --
+        // override via NATSU_PASSWORD_RESET_URL_TEMPLATE once a real one exists.
+        String passwordResetUrlTemplate,
+        // "From" address for outgoing mail. Override via NATSU_MAIL_FROM in any real deployment.
+        String mailFrom) {
 
     /**
      * Per-endpoint, per-dimension throttle settings. Each bucket is independent -- e.g. login has
