@@ -22,6 +22,7 @@ public class RateLimiter {
 
     private final ConcurrentMap<String, Bucket> buckets = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(10_000)
             .<String, Bucket>build()
             .asMap();
 
