@@ -19,7 +19,15 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 // See AuthFlowIntegrationTest for why this override is needed on every integration test class.
-@TestPropertySource(properties = "natsu.rate-limit-capacity=1000000")
+@TestPropertySource(
+        properties = {
+            "natsu.rate-limit.login.capacity=1000000",
+            "natsu.rate-limit.login-email.capacity=1000000",
+            "natsu.rate-limit.register.capacity=1000000",
+            "natsu.rate-limit.password-reset.capacity=1000000",
+            "natsu.rate-limit.refresh.capacity=1000000",
+            "natsu.rate-limit.refresh-token.capacity=1000000"
+        })
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)

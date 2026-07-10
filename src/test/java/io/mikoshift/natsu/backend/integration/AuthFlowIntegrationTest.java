@@ -20,10 +20,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-// All integration tests share one cached Spring context, so they also share one RateLimitFilter
+// All integration tests share one cached Spring context, so they also share one RateLimiter
 // instance and its bucket state -- without this override, auth calls from earlier test classes
 // in the same run would eat into this class's rate limit budget.
-@TestPropertySource(properties = "natsu.rate-limit-capacity=1000000")
+@TestPropertySource(
+        properties = {
+            "natsu.rate-limit.login.capacity=1000000",
+            "natsu.rate-limit.login-email.capacity=1000000",
+            "natsu.rate-limit.register.capacity=1000000",
+            "natsu.rate-limit.password-reset.capacity=1000000",
+            "natsu.rate-limit.refresh.capacity=1000000",
+            "natsu.rate-limit.refresh-token.capacity=1000000"
+        })
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
