@@ -2,6 +2,7 @@ package io.mikoshift.natsu.backend.repository;
 
 import io.mikoshift.natsu.backend.entity.Document;
 import io.mikoshift.natsu.backend.entity.User;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +15,9 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
     Optional<Document> findByIdAndUser(UUID id, User user);
 
     List<Document> findByUserAndUpdatedAtMsGreaterThanOrderByUpdatedAtMsAsc(User user, long since);
+
+    /** Documents still PENDING whose creation predates the staleness cutoff -- candidates for stale-import recovery. */
+    List<Document> findByStatusAndCreatedAtBefore(Document.Status status, Instant cutoff);
 
     /** Matches against title and/or the extracted body text populated once a package has been processed. */
     @Query("select d from Document d where d.user = :user and d.deletedAt is null "

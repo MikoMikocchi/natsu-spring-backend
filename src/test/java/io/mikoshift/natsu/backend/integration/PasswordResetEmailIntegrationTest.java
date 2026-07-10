@@ -40,7 +40,8 @@ import org.springframework.test.web.servlet.MockMvc;
             "natsu.rate-limit.refresh-token.capacity=1000000",
             "natsu.password-reset-url-template=https://natsu.example/reset-password?token={token}",
             "natsu.mail-from=noreply@natsu.example",
-            "spring.mail.host=localhost"
+            "spring.mail.host=localhost",
+            "natsu.book-import-recovery.enabled=false"
         })
 @SpringBootTest
 @AutoConfigureMockMvc
