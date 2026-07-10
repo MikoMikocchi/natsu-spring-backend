@@ -16,7 +16,8 @@ public record NatsuProperties(
         // override via NATSU_PASSWORD_RESET_URL_TEMPLATE once a real one exists.
         String passwordResetUrlTemplate,
         // "From" address for outgoing mail. Override via NATSU_MAIL_FROM in any real deployment.
-        String mailFrom) {
+        String mailFrom,
+        BookImportRecovery bookImportRecovery) {
 
     /**
      * Per-endpoint, per-dimension throttle settings. Each bucket is independent -- e.g. login has
@@ -33,4 +34,12 @@ public record NatsuProperties(
 
         public record Bucket(int capacity, int windowSeconds) {}
     }
+
+    /**
+     * Governs the job that finds {@code Document}s stuck in {@code PENDING} (e.g. the app crashed
+     * or restarted mid-import, stranding the in-memory {@code @Async} task) and flips them to
+     * {@code FAILED} so the user sees an actual error instead of a permanent "importing..." spinner.
+     * See {@code io.mikoshift.natsu.backend.service.bookimport.StaleImportRecoveryService}.
+     */
+    public record BookImportRecovery(int staleAfterMinutes, long checkIntervalMinutes, int maxAttempts) {}
 }

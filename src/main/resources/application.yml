@@ -74,3 +74,17 @@ natsu:
     refresh-token:
       capacity: 5
       window-seconds: 60
+  # Recovers documents left stuck in PENDING by a crash/restart mid-import (the in-memory async
+  # task that was processing them is simply gone otherwise). Runs on startup and periodically;
+  # see StaleImportRecoveryService.
+  book-import-recovery:
+    # How long a document may sit in PENDING before it's treated as stranded rather than a
+    # genuinely slow, still-running import. Comfortably above realistic import durations.
+    stale-after-minutes: 15
+    # How often the periodic sweep runs, in addition to the one that always runs on startup.
+    check-interval-minutes: 5
+    # After this many recovery passes on the same document, stop retrying and leave it FAILED --
+    # the original upload bytes are never persisted, so recovery can only fail the document
+    # cleanly, never actually resume the parse; this cap just bounds how many times it gets
+    # rescanned/re-logged before that terminal state is reached.
+    max-attempts: 3
