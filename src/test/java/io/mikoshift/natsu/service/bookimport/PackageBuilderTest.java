@@ -55,4 +55,18 @@ class PackageBuilderTest {
 
         assertThat(text).isEqualTo("Title\nBody text.");
     }
+
+    @Test
+    void countsJapaneseTextPerCharacterInManifestWordCount() {
+        ParagraphBlock paragraph = new ParagraphBlock("section-0-b0", "私は学生です", List.of(), List.of());
+        ImportedSection section = new ImportedSection("section-0", "第一章", List.of(paragraph));
+        ImportedBook book = new ImportedBook("本", List.of(), "ja", null, List.of(), List.of(section), List.of());
+
+        byte[] zip = builder.buildZip("本", SourceFormat.EPUB, book);
+        PackageManifest manifest = JsonMapper.builder()
+                .build()
+                .readValue(ZipUtils.readEntries(zip).get("manifest.json"), PackageManifest.class);
+
+        assertThat(manifest.sections().get(0).wordCount()).isEqualTo(6);
+    }
 }

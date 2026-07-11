@@ -4,6 +4,7 @@ import io.mikoshift.natsu.entity.Document.SourceFormat;
 import io.mikoshift.natsu.service.bookimport.PackageManifest.ManifestSection;
 import io.mikoshift.natsu.service.bookimport.PackageManifest.ManifestTocNode;
 import io.mikoshift.natsu.util.HashUtils;
+import io.mikoshift.natsu.util.TextCountUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -81,10 +82,7 @@ public class PackageBuilder {
     private static int wordCount(List<Block> blocks) {
         int count = 0;
         for (Block block : blocks) {
-            String text = plainTextOf(block).strip();
-            if (!text.isEmpty()) {
-                count += text.split("\\s+").length;
-            }
+            count += TextCountUtils.countReadingUnits(plainTextOf(block));
         }
         return count;
     }
