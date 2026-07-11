@@ -1,5 +1,6 @@
 package io.mikoshift.natsu.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -8,6 +9,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import io.mikoshift.natsu.TestcontainersConfiguration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -106,6 +113,15 @@ class ReaderSettingIntegrationTest {
     }
 
     @Test
+    void parallelFirstReadsBothSucceedWithoutConflict() throws Exception {
+        String token = registerAndGetToken("settings-race@example.com");
+
+        List<Integer> statuses = readInParallel(token, 8);
+
+        assertThat(statuses).containsOnly(200);
+    }
+
+    @Test
     void outOfRangeValuesAreRejected() throws Exception {
         String token = registerAndGetToken("settings-invalid@example.com");
 
@@ -135,5 +151,23 @@ class ReaderSettingIntegrationTest {
         mockMvc.perform(get("/v1/settings/reader").header("Authorization", "Bearer " + tokenB))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.settings.theme").value("LIGHT"));
+    }
+
+    private List<Integer> readInParallel(String token, int requestCount) throws Exception {
+        try (ExecutorService executor = Executors.newFixedThreadPool(requestCount)) {
+            List<Callable<Integer>> tasks = new ArrayList<>();
+            for (int i = 0; i < requestCount; i++) {
+                tasks.add(() -> mockMvc.perform(get("/v1/settings/reader").header("Authorization", "Bearer " + token))
+                        .andReturn()
+                        .getResponse()
+                        .getStatus());
+            }
+            List<Future<Integer>> futures = executor.invokeAll(tasks);
+            List<Integer> statuses = new ArrayList<>();
+            for (Future<Integer> future : futures) {
+                statuses.add(future.get());
+            }
+            return statuses;
+        }
     }
 }

@@ -44,6 +44,7 @@ class ReaderSettingServiceTest {
         ReaderSetting result = settingService.getOrCreate(user);
 
         assertThat(result).isSameAs(existing);
+        verify(readerSettingRepository).acquireCreationLock(1L);
         verify(readerSettingRepository, never()).save(any(ReaderSetting.class));
     }
 
@@ -56,6 +57,7 @@ class ReaderSettingServiceTest {
 
         assertThat(result.getUser()).isSameAs(user);
         assertThat(result.getFontSizeSp()).isEqualTo(16.0);
+        verify(readerSettingRepository).acquireCreationLock(1L);
         verify(readerSettingRepository).save(result);
     }
 

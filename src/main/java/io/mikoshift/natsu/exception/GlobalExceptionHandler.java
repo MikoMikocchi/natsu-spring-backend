@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * Translates exceptions into the {@code {"errors": {"field": ["message"]}}} shape used across the
  * API.
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -63,7 +65,16 @@ public class GlobalExceptionHandler {
         if (isStorageQuotaExceeded(ex)) {
             return handleApiException(new QuotaExceededException("Storage quota exceeded"));
         }
-        throw ex;
+        log.warn("Data integrity violation", ex);
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("errors", Map.of("base", List.of("Conflict"))));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleUnexpected(Exception ex) {
+        log.error("Unhandled exception", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("errors", Map.of("base", List.of("Something went wrong"))));
     }
 
     private static boolean isStorageQuotaExceeded(Throwable ex) {

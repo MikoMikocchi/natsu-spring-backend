@@ -16,6 +16,7 @@ public class ReaderSettingService {
 
     @Transactional
     public ReaderSetting getOrCreate(User user) {
+        readerSettingRepository.acquireCreationLock(user.getId());
         return readerSettingRepository.findById(user.getId()).orElseGet(() -> {
             ReaderSetting settings = new ReaderSetting();
             settings.setUser(user);
