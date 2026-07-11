@@ -6,7 +6,7 @@ package io.mikoshift.natsu.backend.service.bookimport;
  */
 public class TransientImportException extends RuntimeException {
 
-  public TransientImportException(String message, Throwable cause) {
-    super(message, cause);
-  }
+    public TransientImportException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

@@ -31,109 +31,108 @@ import org.springframework.mock.web.MockMultipartFile;
 @ExtendWith(MockitoExtension.class)
 class PackageUploadServiceTest {
 
-  @Mock private DocumentRepository documentRepository;
-  @Mock private StorageQuotaService storageQuotaService;
-  @Mock private PackageStorageService packageStorageService;
+    @Mock
+    private DocumentRepository documentRepository;
 
-  private PackageUploadService uploadService;
-  private User user;
-  private UUID documentId;
-  private Document document;
+    @Mock
+    private StorageQuotaService storageQuotaService;
 
-  @BeforeEach
-  void setUp() {
-    uploadService =
-        new PackageUploadService(documentRepository, storageQuotaService, packageStorageService);
-    user = new User();
-    user.setId(1L);
-    documentId = UUID.randomUUID();
-    document = new Document();
-    document.setId(documentId);
-    document.setUser(user);
-    document.setPackageSizeBytes(100L);
-  }
+    @Mock
+    private PackageStorageService packageStorageService;
 
-  @Test
-  void uploadsAValidZipAndUpdatesDocumentMetadata() throws IOException {
-    byte[] zip = zipWithEntries("manifest.json");
-    MockMultipartFile file = new MockMultipartFile("package", "book.zip", "application/zip", zip);
-    when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.of(document));
-    when(packageStorageService.store(eq(documentId), any(byte[].class)))
-        .thenReturn(new StoredPackage(zip.length, "deadbeef"));
-    when(documentRepository.save(document)).thenReturn(document);
+    private PackageUploadService uploadService;
+    private User user;
+    private UUID documentId;
+    private Document document;
 
-    Document result = uploadService.upload(user, documentId, file);
-
-    assertThat(result.getPackageSizeBytes()).isEqualTo(zip.length);
-    assertThat(result.getPackageSha256()).isEqualTo("deadbeef");
-    assertThat(result.getPackageUpdatedAtMs()).isGreaterThan(0);
-    assertThat(result.getUpdatedAtMs()).isEqualTo(result.getPackageUpdatedAtMs());
-  }
-
-  @Test
-  void rejectsAnEmptyFile() {
-    MockMultipartFile emptyFile =
-        new MockMultipartFile("package", "book.zip", "application/zip", new byte[0]);
-    when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.of(document));
-
-    assertThatThrownBy(() -> uploadService.upload(user, documentId, emptyFile))
-        .isInstanceOf(ValidationException.class);
-  }
-
-  @Test
-  void rejectsAZipThatIsMissingTheManifest() throws IOException {
-    byte[] zip = zipWithEntries("content.txt");
-    MockMultipartFile file = new MockMultipartFile("package", "book.zip", "application/zip", zip);
-    when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.of(document));
-
-    assertThatThrownBy(() -> uploadService.upload(user, documentId, file))
-        .isInstanceOf(ValidationException.class)
-        .hasMessageContaining("manifest.json");
-  }
-
-  @Test
-  void rejectsContentThatIsNotAValidZipArchive() {
-    byte[] garbage = new byte[] {1, 2, 3, 4, 5};
-    MockMultipartFile file =
-        new MockMultipartFile("package", "book.zip", "application/zip", garbage);
-    when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.of(document));
-
-    assertThatThrownBy(() -> uploadService.upload(user, documentId, file))
-        .isInstanceOf(ValidationException.class);
-  }
-
-  @Test
-  void rejectsUploadWhenDocumentDoesNotBelongToTheUser() {
-    MockMultipartFile file =
-        new MockMultipartFile("package", "book.zip", "application/zip", new byte[] {1});
-    when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> uploadService.upload(user, documentId, file))
-        .isInstanceOf(NotFoundException.class);
-  }
-
-  @Test
-  void propagatesQuotaExceededFromTheQuotaService() throws IOException {
-    byte[] zip = zipWithEntries("manifest.json");
-    MockMultipartFile file = new MockMultipartFile("package", "book.zip", "application/zip", zip);
-    when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.of(document));
-    doThrow(new QuotaExceededException("Storage quota exceeded"))
-        .when(storageQuotaService)
-        .checkUserQuota(user, zip.length, document.getPackageSizeBytes());
-
-    assertThatThrownBy(() -> uploadService.upload(user, documentId, file))
-        .isInstanceOf(QuotaExceededException.class);
-  }
-
-  private static byte[] zipWithEntries(String... entryNames) throws IOException {
-    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-    try (ZipOutputStream zip = new ZipOutputStream(bytes)) {
-      for (String entryName : entryNames) {
-        zip.putNextEntry(new ZipEntry(entryName));
-        zip.write("content".getBytes());
-        zip.closeEntry();
-      }
+    @BeforeEach
+    void setUp() {
+        uploadService = new PackageUploadService(documentRepository, storageQuotaService, packageStorageService);
+        user = new User();
+        user.setId(1L);
+        documentId = UUID.randomUUID();
+        document = new Document();
+        document.setId(documentId);
+        document.setUser(user);
+        document.setPackageSizeBytes(100L);
     }
-    return bytes.toByteArray();
-  }
+
+    @Test
+    void uploadsAValidZipAndUpdatesDocumentMetadata() throws IOException {
+        byte[] zip = zipWithEntries("manifest.json");
+        MockMultipartFile file = new MockMultipartFile("package", "book.zip", "application/zip", zip);
+        when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.of(document));
+        when(packageStorageService.store(eq(documentId), any(byte[].class)))
+                .thenReturn(new StoredPackage(zip.length, "deadbeef"));
+        when(documentRepository.save(document)).thenReturn(document);
+
+        Document result = uploadService.upload(user, documentId, file);
+
+        assertThat(result.getPackageSizeBytes()).isEqualTo(zip.length);
+        assertThat(result.getPackageSha256()).isEqualTo("deadbeef");
+        assertThat(result.getPackageUpdatedAtMs()).isGreaterThan(0);
+        assertThat(result.getUpdatedAtMs()).isEqualTo(result.getPackageUpdatedAtMs());
+    }
+
+    @Test
+    void rejectsAnEmptyFile() {
+        MockMultipartFile emptyFile = new MockMultipartFile("package", "book.zip", "application/zip", new byte[0]);
+        when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.of(document));
+
+        assertThatThrownBy(() -> uploadService.upload(user, documentId, emptyFile))
+                .isInstanceOf(ValidationException.class);
+    }
+
+    @Test
+    void rejectsAZipThatIsMissingTheManifest() throws IOException {
+        byte[] zip = zipWithEntries("content.txt");
+        MockMultipartFile file = new MockMultipartFile("package", "book.zip", "application/zip", zip);
+        when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.of(document));
+
+        assertThatThrownBy(() -> uploadService.upload(user, documentId, file))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("manifest.json");
+    }
+
+    @Test
+    void rejectsContentThatIsNotAValidZipArchive() {
+        byte[] garbage = new byte[] {1, 2, 3, 4, 5};
+        MockMultipartFile file = new MockMultipartFile("package", "book.zip", "application/zip", garbage);
+        when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.of(document));
+
+        assertThatThrownBy(() -> uploadService.upload(user, documentId, file)).isInstanceOf(ValidationException.class);
+    }
+
+    @Test
+    void rejectsUploadWhenDocumentDoesNotBelongToTheUser() {
+        MockMultipartFile file = new MockMultipartFile("package", "book.zip", "application/zip", new byte[] {1});
+        when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> uploadService.upload(user, documentId, file)).isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void propagatesQuotaExceededFromTheQuotaService() throws IOException {
+        byte[] zip = zipWithEntries("manifest.json");
+        MockMultipartFile file = new MockMultipartFile("package", "book.zip", "application/zip", zip);
+        when(documentRepository.findByIdAndUser(documentId, user)).thenReturn(Optional.of(document));
+        doThrow(new QuotaExceededException("Storage quota exceeded"))
+                .when(storageQuotaService)
+                .checkUserQuota(user, zip.length, document.getPackageSizeBytes());
+
+        assertThatThrownBy(() -> uploadService.upload(user, documentId, file))
+                .isInstanceOf(QuotaExceededException.class);
+    }
+
+    private static byte[] zipWithEntries(String... entryNames) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(bytes)) {
+            for (String entryName : entryNames) {
+                zip.putNextEntry(new ZipEntry(entryName));
+                zip.write("content".getBytes());
+                zip.closeEntry();
+            }
+        }
+        return bytes.toByteArray();
+    }
 }

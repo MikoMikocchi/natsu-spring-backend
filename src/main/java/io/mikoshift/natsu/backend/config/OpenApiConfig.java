@@ -11,24 +11,22 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfig {
 
-  private static final String BEARER_SCHEME = "bearerAuth";
+    private static final String BEARER_SCHEME = "bearerAuth";
 
-  @Bean
-  OpenAPI natsuOpenApi() {
-    return new OpenAPI()
-        .info(
-            new Info()
-                .title("Natsu API")
-                .description("Japanese e-book reader backend")
-                .version("v1"))
-        .addSecurityItem(new SecurityRequirement().addList(BEARER_SCHEME))
-        .components(
-            new Components()
-                .addSecuritySchemes(
-                    BEARER_SCHEME,
-                    new SecurityScheme()
-                        .type(SecurityScheme.Type.HTTP)
-                        .scheme("bearer")
-                        .bearerFormat("opaque")));
-  }
+    @Bean
+    OpenAPI natsuOpenApi() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Natsu API")
+                        .description("Japanese e-book reader backend")
+                        .version("v1"))
+                .addSecurityItem(new SecurityRequirement().addList(BEARER_SCHEME))
+                .components(new Components()
+                        .addSecuritySchemes(
+                                BEARER_SCHEME,
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("opaque")));
+    }
 }

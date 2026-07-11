@@ -24,24 +24,23 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
 
-  private static final String BEARER_PREFIX = "Bearer ";
+    private static final String BEARER_PREFIX = "Bearer ";
 
-  private final TokenService tokenService;
+    private final TokenService tokenService;
 
-  @Override
-  protected void doFilterInternal(
-      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-      throws ServletException, IOException {
-    String header = request.getHeader("Authorization");
-    if (header != null && header.startsWith(BEARER_PREFIX)) {
-      String accessToken = header.substring(BEARER_PREFIX.length());
-      tokenService.resolveAccessToken(accessToken).ifPresent(this::authenticate);
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith(BEARER_PREFIX)) {
+            String accessToken = header.substring(BEARER_PREFIX.length());
+            tokenService.resolveAccessToken(accessToken).ifPresent(this::authenticate);
+        }
+        filterChain.doFilter(request, response);
     }
-    filterChain.doFilter(request, response);
-  }
 
-  private void authenticate(AuthToken token) {
-    var authentication = new UsernamePasswordAuthenticationToken(token.getUser(), token, List.of());
-    SecurityContextHolder.getContext().setAuthentication(authentication);
-  }
+    private void authenticate(AuthToken token) {
+        var authentication = new UsernamePasswordAuthenticationToken(token.getUser(), token, List.of());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
 }

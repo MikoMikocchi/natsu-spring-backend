@@ -12,16 +12,16 @@ import org.springframework.http.HttpStatus;
 @Getter
 public class ApiException extends RuntimeException {
 
-  private final HttpStatus status;
-  private final Map<String, List<String>> errors;
+    private final HttpStatus status;
+    private final Map<String, List<String>> errors;
 
-  protected ApiException(HttpStatus status, Map<String, List<String>> errors) {
-    super(errors.toString());
-    this.status = status;
-    this.errors = errors;
-  }
+    protected ApiException(HttpStatus status, Map<String, List<String>> errors) {
+        super(errors.toString());
+        this.status = status;
+        this.errors = errors;
+    }
 
-  protected ApiException(HttpStatus status, String field, String message) {
-    this(status, Map.of(field, List.of(message)));
-  }
+    protected ApiException(HttpStatus status, String field, String message) {
+        this(status, Map.of(field, List.of(message)));
+    }
 }

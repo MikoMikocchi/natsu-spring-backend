@@ -16,50 +16,47 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthService {
 
-  private final UserRepository userRepository;
-  private final PasswordEncoder passwordEncoder;
-  private final TokenService tokenService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
 
-  @Transactional
-  public AuthResult register(RegisterRequest request, String deviceName) {
-    if (!request.password().equals(request.passwordConfirmation())) {
-      throw ValidationException.of("password_confirmation", "doesn't match Password");
+    @Transactional
+    public AuthResult register(RegisterRequest request, String deviceName) {
+        if (!request.password().equals(request.passwordConfirmation())) {
+            throw ValidationException.of("password_confirmation", "doesn't match Password");
+        }
+        if (userRepository.existsByEmailIgnoreCase(request.email())) {
+            throw ValidationException.of("email", "has already been taken");
+        }
+
+        User user = new User();
+        user.setName(request.name());
+        user.setEmail(request.email());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user = userRepository.save(user);
+
+        return new AuthResult(tokenService.issue(user, deviceName), user);
     }
-    if (userRepository.existsByEmailIgnoreCase(request.email())) {
-      throw ValidationException.of("email", "has already been taken");
+
+    @Transactional
+    public AuthResult login(LoginRequest request, String deviceName) {
+        User user = userRepository.findByEmailIgnoreCase(request.email()).orElseThrow(InvalidCredentialsException::new);
+        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            throw new InvalidCredentialsException();
+        }
+        return new AuthResult(tokenService.issue(user, deviceName), user);
     }
 
-    User user = new User();
-    user.setName(request.name());
-    user.setEmail(request.email());
-    user.setPasswordHash(passwordEncoder.encode(request.password()));
-    user = userRepository.save(user);
-
-    return new AuthResult(tokenService.issue(user, deviceName), user);
-  }
-
-  @Transactional
-  public AuthResult login(LoginRequest request, String deviceName) {
-    User user =
-        userRepository
-            .findByEmailIgnoreCase(request.email())
-            .orElseThrow(InvalidCredentialsException::new);
-    if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-      throw new InvalidCredentialsException();
+    @Transactional
+    public AuthResult refresh(String refreshToken) {
+        AuthToken token = tokenService.rotate(refreshToken);
+        return new AuthResult(token, token.getUser());
     }
-    return new AuthResult(tokenService.issue(user, deviceName), user);
-  }
 
-  @Transactional
-  public AuthResult refresh(String refreshToken) {
-    AuthToken token = tokenService.rotate(refreshToken);
-    return new AuthResult(token, token.getUser());
-  }
+    @Transactional
+    public void logout(AuthToken currentToken) {
+        tokenService.revoke(currentToken);
+    }
 
-  @Transactional
-  public void logout(AuthToken currentToken) {
-    tokenService.revoke(currentToken);
-  }
-
-  public record AuthResult(AuthToken token, User user) {}
+    public record AuthResult(AuthToken token, User user) {}
 }

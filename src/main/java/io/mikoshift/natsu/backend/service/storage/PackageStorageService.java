@@ -10,11 +10,11 @@ import org.springframework.core.io.Resource;
  */
 public interface PackageStorageService {
 
-  StoredPackage store(UUID documentId, byte[] content);
+    StoredPackage store(UUID documentId, byte[] content);
 
-  Resource load(UUID documentId);
+    Resource load(UUID documentId);
 
-  boolean exists(UUID documentId);
+    boolean exists(UUID documentId);
 
-  void delete(UUID documentId);
+    void delete(UUID documentId);
 }

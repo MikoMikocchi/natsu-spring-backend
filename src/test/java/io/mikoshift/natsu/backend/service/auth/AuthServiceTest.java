@@ -27,114 +27,111 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-  @Mock private UserRepository userRepository;
-  @Mock private PasswordEncoder passwordEncoder;
-  @Mock private TokenService tokenService;
+    @Mock
+    private UserRepository userRepository;
 
-  private AuthService authService;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
-  @BeforeEach
-  void setUp() {
-    authService = new AuthService(userRepository, passwordEncoder, tokenService);
-  }
+    @Mock
+    private TokenService tokenService;
 
-  @Test
-  void registerCreatesAUserAndIssuesATokenOnSuccess() {
-    RegisterRequest request =
-        new RegisterRequest("Aiko", "aiko@example.com", "password1", "password1");
-    when(userRepository.existsByEmailIgnoreCase("aiko@example.com")).thenReturn(false);
-    when(passwordEncoder.encode("password1")).thenReturn("hashed");
-    when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
-    AuthToken issuedToken = new AuthToken();
-    when(tokenService.issue(any(User.class), eq("Pixel 8"))).thenReturn(issuedToken);
+    private AuthService authService;
 
-    AuthResult result = authService.register(request, "Pixel 8");
+    @BeforeEach
+    void setUp() {
+        authService = new AuthService(userRepository, passwordEncoder, tokenService);
+    }
 
-    assertThat(result.token()).isSameAs(issuedToken);
-    assertThat(result.user().getEmail()).isEqualTo("aiko@example.com");
-    assertThat(result.user().getPasswordHash()).isEqualTo("hashed");
-  }
+    @Test
+    void registerCreatesAUserAndIssuesATokenOnSuccess() {
+        RegisterRequest request = new RegisterRequest("Aiko", "aiko@example.com", "password1", "password1");
+        when(userRepository.existsByEmailIgnoreCase("aiko@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password1")).thenReturn("hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        AuthToken issuedToken = new AuthToken();
+        when(tokenService.issue(any(User.class), eq("Pixel 8"))).thenReturn(issuedToken);
 
-  @Test
-  void registerRejectsAMismatchedPasswordConfirmation() {
-    RegisterRequest request =
-        new RegisterRequest("Aiko", "aiko@example.com", "password1", "different");
+        AuthResult result = authService.register(request, "Pixel 8");
 
-    assertThatThrownBy(() -> authService.register(request, "Pixel 8"))
-        .isInstanceOf(ValidationException.class);
-    verify(userRepository, never()).existsByEmailIgnoreCase(any());
-  }
+        assertThat(result.token()).isSameAs(issuedToken);
+        assertThat(result.user().getEmail()).isEqualTo("aiko@example.com");
+        assertThat(result.user().getPasswordHash()).isEqualTo("hashed");
+    }
 
-  @Test
-  void registerRejectsAnEmailThatIsAlreadyTaken() {
-    RegisterRequest request =
-        new RegisterRequest("Aiko", "aiko@example.com", "password1", "password1");
-    when(userRepository.existsByEmailIgnoreCase("aiko@example.com")).thenReturn(true);
+    @Test
+    void registerRejectsAMismatchedPasswordConfirmation() {
+        RegisterRequest request = new RegisterRequest("Aiko", "aiko@example.com", "password1", "different");
 
-    assertThatThrownBy(() -> authService.register(request, "Pixel 8"))
-        .isInstanceOf(ValidationException.class);
-    verify(userRepository, never()).save(any());
-  }
+        assertThatThrownBy(() -> authService.register(request, "Pixel 8")).isInstanceOf(ValidationException.class);
+        verify(userRepository, never()).existsByEmailIgnoreCase(any());
+    }
 
-  @Test
-  void loginSucceedsWithCorrectCredentials() {
-    User user = new User();
-    user.setEmail("aiko@example.com");
-    user.setPasswordHash("hashed");
-    when(userRepository.findByEmailIgnoreCase("aiko@example.com")).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches("password1", "hashed")).thenReturn(true);
-    AuthToken issuedToken = new AuthToken();
-    when(tokenService.issue(user, "Pixel 8")).thenReturn(issuedToken);
+    @Test
+    void registerRejectsAnEmailThatIsAlreadyTaken() {
+        RegisterRequest request = new RegisterRequest("Aiko", "aiko@example.com", "password1", "password1");
+        when(userRepository.existsByEmailIgnoreCase("aiko@example.com")).thenReturn(true);
 
-    AuthResult result =
-        authService.login(new LoginRequest("aiko@example.com", "password1"), "Pixel 8");
+        assertThatThrownBy(() -> authService.register(request, "Pixel 8")).isInstanceOf(ValidationException.class);
+        verify(userRepository, never()).save(any());
+    }
 
-    assertThat(result.token()).isSameAs(issuedToken);
-    assertThat(result.user()).isSameAs(user);
-  }
+    @Test
+    void loginSucceedsWithCorrectCredentials() {
+        User user = new User();
+        user.setEmail("aiko@example.com");
+        user.setPasswordHash("hashed");
+        when(userRepository.findByEmailIgnoreCase("aiko@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password1", "hashed")).thenReturn(true);
+        AuthToken issuedToken = new AuthToken();
+        when(tokenService.issue(user, "Pixel 8")).thenReturn(issuedToken);
 
-  @Test
-  void loginRejectsAnUnknownEmail() {
-    when(userRepository.findByEmailIgnoreCase("nobody@example.com")).thenReturn(Optional.empty());
+        AuthResult result = authService.login(new LoginRequest("aiko@example.com", "password1"), "Pixel 8");
 
-    assertThatThrownBy(
-            () -> authService.login(new LoginRequest("nobody@example.com", "password1"), "Pixel 8"))
-        .isInstanceOf(InvalidCredentialsException.class);
-  }
+        assertThat(result.token()).isSameAs(issuedToken);
+        assertThat(result.user()).isSameAs(user);
+    }
 
-  @Test
-  void loginRejectsAnIncorrectPassword() {
-    User user = new User();
-    user.setEmail("aiko@example.com");
-    user.setPasswordHash("hashed");
-    when(userRepository.findByEmailIgnoreCase("aiko@example.com")).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches("wrong", "hashed")).thenReturn(false);
+    @Test
+    void loginRejectsAnUnknownEmail() {
+        when(userRepository.findByEmailIgnoreCase("nobody@example.com")).thenReturn(Optional.empty());
 
-    assertThatThrownBy(
-            () -> authService.login(new LoginRequest("aiko@example.com", "wrong"), "Pixel 8"))
-        .isInstanceOf(InvalidCredentialsException.class);
-    verify(tokenService, never()).issue(any(), any());
-  }
+        assertThatThrownBy(() -> authService.login(new LoginRequest("nobody@example.com", "password1"), "Pixel 8"))
+                .isInstanceOf(InvalidCredentialsException.class);
+    }
 
-  @Test
-  void refreshRotatesTheTokenAndReturnsItsOwner() {
-    User user = new User();
-    AuthToken rotated = new AuthToken();
-    rotated.setUser(user);
-    when(tokenService.rotate("refresh-token")).thenReturn(rotated);
+    @Test
+    void loginRejectsAnIncorrectPassword() {
+        User user = new User();
+        user.setEmail("aiko@example.com");
+        user.setPasswordHash("hashed");
+        when(userRepository.findByEmailIgnoreCase("aiko@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong", "hashed")).thenReturn(false);
 
-    AuthResult result = authService.refresh("refresh-token");
+        assertThatThrownBy(() -> authService.login(new LoginRequest("aiko@example.com", "wrong"), "Pixel 8"))
+                .isInstanceOf(InvalidCredentialsException.class);
+        verify(tokenService, never()).issue(any(), any());
+    }
 
-    assertThat(result.token()).isSameAs(rotated);
-    assertThat(result.user()).isSameAs(user);
-  }
+    @Test
+    void refreshRotatesTheTokenAndReturnsItsOwner() {
+        User user = new User();
+        AuthToken rotated = new AuthToken();
+        rotated.setUser(user);
+        when(tokenService.rotate("refresh-token")).thenReturn(rotated);
 
-  @Test
-  void logoutRevokesTheCurrentToken() {
-    AuthToken token = new AuthToken();
+        AuthResult result = authService.refresh("refresh-token");
 
-    authService.logout(token);
+        assertThat(result.token()).isSameAs(rotated);
+        assertThat(result.user()).isSameAs(user);
+    }
 
-    verify(tokenService).revoke(token);
-  }
+    @Test
+    void logoutRevokesTheCurrentToken() {
+        AuthToken token = new AuthToken();
+
+        authService.logout(token);
+
+        verify(tokenService).revoke(token);
+    }
 }

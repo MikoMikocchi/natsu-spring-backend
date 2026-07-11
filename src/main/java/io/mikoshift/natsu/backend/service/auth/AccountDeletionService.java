@@ -17,14 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AccountDeletionService {
 
-  private final UserRepository userRepository;
-  private final PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-  @Transactional
-  public void deleteAccount(User user, String password) {
-    if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-      throw new InvalidCredentialsException();
+    @Transactional
+    public void deleteAccount(User user, String password) {
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new InvalidCredentialsException();
+        }
+        userRepository.delete(user);
     }
-    userRepository.delete(user);
-  }
 }

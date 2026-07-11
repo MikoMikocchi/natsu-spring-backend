@@ -20,25 +20,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class PasswordController {
 
-  private final PasswordService passwordService;
+    private final PasswordService passwordService;
 
-  @PatchMapping
-  MessageResponse change(
-      @AuthenticationPrincipal User user, @Valid @RequestBody ChangePasswordRequest request) {
-    passwordService.changePassword(user, request);
-    return new MessageResponse("Password updated successfully");
-  }
+    @PatchMapping
+    MessageResponse change(@AuthenticationPrincipal User user, @Valid @RequestBody ChangePasswordRequest request) {
+        passwordService.changePassword(user, request);
+        return new MessageResponse("Password updated successfully");
+    }
 
-  @PostMapping("/forgot")
-  MessageResponse forgot(@Valid @RequestBody ForgotPasswordRequest request) {
-    passwordService.forgotPassword(request.email());
-    return new MessageResponse(
-        "If an account exists for that email, password reset instructions have been sent");
-  }
+    @PostMapping("/forgot")
+    MessageResponse forgot(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordService.forgotPassword(request.email());
+        return new MessageResponse("If an account exists for that email, password reset instructions have been sent");
+    }
 
-  @PostMapping("/reset")
-  MessageResponse reset(@Valid @RequestBody ResetPasswordRequest request) {
-    passwordService.resetPassword(request);
-    return new MessageResponse("Password reset successfully");
-  }
+    @PostMapping("/reset")
+    MessageResponse reset(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordService.resetPassword(request);
+        return new MessageResponse("Password reset successfully");
+    }
 }

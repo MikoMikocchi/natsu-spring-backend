@@ -42,90 +42,84 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class DocumentController {
 
-  private final DocumentQueryService documentQueryService;
-  private final DocumentSyncService documentSyncService;
-  private final DocumentImportService documentImportService;
-  private final PackageUploadService packageUploadService;
-  private final PackageStorageService packageStorageService;
-  private final ServerTimeService serverTimeService;
+    private final DocumentQueryService documentQueryService;
+    private final DocumentSyncService documentSyncService;
+    private final DocumentImportService documentImportService;
+    private final PackageUploadService packageUploadService;
+    private final PackageStorageService packageStorageService;
+    private final ServerTimeService serverTimeService;
 
-  @GetMapping
-  DocumentIndexResponse index(
-      @AuthenticationPrincipal User user,
-      @RequestParam(defaultValue = "0") long since,
-      @RequestParam(required = false) Integer limit) {
-    return toIndexResponse(documentQueryService.listSince(user, since, limit));
-  }
-
-  @GetMapping("/search")
-  DocumentSearchResponse search(
-      @AuthenticationPrincipal User user, @RequestParam @NotBlank String q) {
-    return new DocumentSearchResponse(
-        documentQueryService.search(user, q), serverTimeService.nowMs());
-  }
-
-  @GetMapping("/{id}")
-  DocumentShowResponse show(@AuthenticationPrincipal User user, @PathVariable UUID id) {
-    return toShowResponse(documentQueryService.get(user, id));
-  }
-
-  @PostMapping("/sync")
-  DocumentIndexResponse sync(
-      @AuthenticationPrincipal User user, @Valid @RequestBody DocumentSyncRequest request) {
-    return toIndexResponse(documentSyncService.sync(user, request));
-  }
-
-  @PostMapping("/import")
-  ResponseEntity<DocumentShowResponse> importDocument(
-      @AuthenticationPrincipal User user, @RequestParam("file") MultipartFile file) {
-    Document document = documentImportService.startImport(user, file);
-    return ResponseEntity.status(HttpStatus.ACCEPTED).body(toShowResponse(document));
-  }
-
-  @PutMapping("/{id}/package")
-  DocumentShowResponse uploadPackage(
-      @AuthenticationPrincipal User user,
-      @PathVariable UUID id,
-      @RequestParam("package") MultipartFile file) {
-    return toShowResponse(packageUploadService.upload(user, id, file));
-  }
-
-  @GetMapping("/{id}/package")
-  ResponseEntity<Resource> downloadPackage(
-      @AuthenticationPrincipal User user, @PathVariable UUID id) {
-    Document document = requirePackage(user, id);
-    return ResponseEntity.ok()
-        .contentType(MediaType.valueOf("application/zip"))
-        .header("X-Package-Sha256", document.getPackageSha256())
-        .header("X-Package-Updated-At-Ms", String.valueOf(document.getPackageUpdatedAtMs()))
-        .contentLength(document.getPackageSizeBytes())
-        .body(packageStorageService.load(id));
-  }
-
-  @RequestMapping(value = "/{id}/package", method = RequestMethod.HEAD)
-  ResponseEntity<Void> headPackage(@AuthenticationPrincipal User user, @PathVariable UUID id) {
-    Document document = requirePackage(user, id);
-    return ResponseEntity.ok()
-        .header("X-Package-Sha256", document.getPackageSha256())
-        .header("X-Package-Updated-At-Ms", String.valueOf(document.getPackageUpdatedAtMs()))
-        .contentLength(document.getPackageSizeBytes())
-        .build();
-  }
-
-  private Document requirePackage(User user, UUID id) {
-    Document document = documentQueryService.get(user, id);
-    if (document.getPackageSha256() == null) {
-      throw new NotFoundException("Package not attached");
+    @GetMapping
+    DocumentIndexResponse index(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") long since,
+            @RequestParam(required = false) Integer limit) {
+        return toIndexResponse(documentQueryService.listSince(user, since, limit));
     }
-    return document;
-  }
 
-  private DocumentIndexResponse toIndexResponse(List<Document> documents) {
-    return new DocumentIndexResponse(
-        documents.stream().map(DocumentResponse::from).toList(), serverTimeService.nowMs());
-  }
+    @GetMapping("/search")
+    DocumentSearchResponse search(@AuthenticationPrincipal User user, @RequestParam @NotBlank String q) {
+        return new DocumentSearchResponse(documentQueryService.search(user, q), serverTimeService.nowMs());
+    }
 
-  private DocumentShowResponse toShowResponse(Document document) {
-    return new DocumentShowResponse(DocumentResponse.from(document), serverTimeService.nowMs());
-  }
+    @GetMapping("/{id}")
+    DocumentShowResponse show(@AuthenticationPrincipal User user, @PathVariable UUID id) {
+        return toShowResponse(documentQueryService.get(user, id));
+    }
+
+    @PostMapping("/sync")
+    DocumentIndexResponse sync(@AuthenticationPrincipal User user, @Valid @RequestBody DocumentSyncRequest request) {
+        return toIndexResponse(documentSyncService.sync(user, request));
+    }
+
+    @PostMapping("/import")
+    ResponseEntity<DocumentShowResponse> importDocument(
+            @AuthenticationPrincipal User user, @RequestParam("file") MultipartFile file) {
+        Document document = documentImportService.startImport(user, file);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(toShowResponse(document));
+    }
+
+    @PutMapping("/{id}/package")
+    DocumentShowResponse uploadPackage(
+            @AuthenticationPrincipal User user, @PathVariable UUID id, @RequestParam("package") MultipartFile file) {
+        return toShowResponse(packageUploadService.upload(user, id, file));
+    }
+
+    @GetMapping("/{id}/package")
+    ResponseEntity<Resource> downloadPackage(@AuthenticationPrincipal User user, @PathVariable UUID id) {
+        Document document = requirePackage(user, id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.valueOf("application/zip"))
+                .header("X-Package-Sha256", document.getPackageSha256())
+                .header("X-Package-Updated-At-Ms", String.valueOf(document.getPackageUpdatedAtMs()))
+                .contentLength(document.getPackageSizeBytes())
+                .body(packageStorageService.load(id));
+    }
+
+    @RequestMapping(value = "/{id}/package", method = RequestMethod.HEAD)
+    ResponseEntity<Void> headPackage(@AuthenticationPrincipal User user, @PathVariable UUID id) {
+        Document document = requirePackage(user, id);
+        return ResponseEntity.ok()
+                .header("X-Package-Sha256", document.getPackageSha256())
+                .header("X-Package-Updated-At-Ms", String.valueOf(document.getPackageUpdatedAtMs()))
+                .contentLength(document.getPackageSizeBytes())
+                .build();
+    }
+
+    private Document requirePackage(User user, UUID id) {
+        Document document = documentQueryService.get(user, id);
+        if (document.getPackageSha256() == null) {
+            throw new NotFoundException("Package not attached");
+        }
+        return document;
+    }
+
+    private DocumentIndexResponse toIndexResponse(List<Document> documents) {
+        return new DocumentIndexResponse(
+                documents.stream().map(DocumentResponse::from).toList(), serverTimeService.nowMs());
+    }
+
+    private DocumentShowResponse toShowResponse(Document document) {
+        return new DocumentShowResponse(DocumentResponse.from(document), serverTimeService.nowMs());
+    }
 }

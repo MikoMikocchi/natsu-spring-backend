@@ -13,28 +13,27 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class StorageQuotaService {
 
-  private final DocumentRepository documentRepository;
-  private final NatsuProperties properties;
+    private final DocumentRepository documentRepository;
+    private final NatsuProperties properties;
 
-  public void checkUploadSize(long sizeBytes) {
-    if (sizeBytes > properties.maxPackageBytes()) {
-      throw ValidationException.of(
-          "file", "is too large (max " + (properties.maxPackageBytes() / (1024 * 1024)) + " MB)");
+    public void checkUploadSize(long sizeBytes) {
+        if (sizeBytes > properties.maxPackageBytes()) {
+            throw ValidationException.of(
+                    "file", "is too large (max " + (properties.maxPackageBytes() / (1024 * 1024)) + " MB)");
+        }
     }
-  }
 
-  /**
-   * Excludes {@code excludingDocumentId}'s current size, since it's about to be replaced by {@code
-   * newSizeBytes}.
-   */
-  @Transactional(readOnly = true)
-  public void checkUserQuota(User user, long newSizeBytes, long currentSizeOfReplacedDocument) {
-    long used = documentRepository.sumPackageSizeBytesByUser(user) - currentSizeOfReplacedDocument;
-    if (used + newSizeBytes > properties.maxStorageBytesPerUser()) {
-      throw new QuotaExceededException(
-          "Storage quota exceeded (max "
-              + (properties.maxStorageBytesPerUser() / (1024 * 1024))
-              + " MB per account)");
+    /**
+     * Excludes {@code excludingDocumentId}'s current size, since it's about to be replaced by {@code
+     * newSizeBytes}.
+     */
+    @Transactional(readOnly = true)
+    public void checkUserQuota(User user, long newSizeBytes, long currentSizeOfReplacedDocument) {
+        long used = documentRepository.sumPackageSizeBytesByUser(user) - currentSizeOfReplacedDocument;
+        if (used + newSizeBytes > properties.maxStorageBytesPerUser()) {
+            throw new QuotaExceededException("Storage quota exceeded (max "
+                    + (properties.maxStorageBytesPerUser() / (1024 * 1024))
+                    + " MB per account)");
+        }
     }
-  }
 }

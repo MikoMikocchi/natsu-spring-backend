@@ -19,35 +19,35 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class PackageBuilder {
 
-  private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-  public byte[] buildZip(String title, SourceFormat sourceFormat, List<ImportedSection> sections) {
-    List<ManifestSection> manifestSections = new ArrayList<>();
-    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    try (ZipOutputStream zip = new ZipOutputStream(buffer, StandardCharsets.UTF_8)) {
-      for (ImportedSection section : sections) {
-        String path = "sections/" + section.id() + ".html";
-        zip.putNextEntry(new ZipEntry(path));
-        zip.write(section.html().getBytes(StandardCharsets.UTF_8));
-        zip.closeEntry();
-        manifestSections.add(new ManifestSection(section.id(), section.title(), path));
-      }
+    public byte[] buildZip(String title, SourceFormat sourceFormat, List<ImportedSection> sections) {
+        List<ManifestSection> manifestSections = new ArrayList<>();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(buffer, StandardCharsets.UTF_8)) {
+            for (ImportedSection section : sections) {
+                String path = "sections/" + section.id() + ".html";
+                zip.putNextEntry(new ZipEntry(path));
+                zip.write(section.html().getBytes(StandardCharsets.UTF_8));
+                zip.closeEntry();
+                manifestSections.add(new ManifestSection(section.id(), section.title(), path));
+            }
 
-      PackageManifest manifest = new PackageManifest(1, title, sourceFormat, manifestSections);
-      zip.putNextEntry(new ZipEntry("manifest.json"));
-      zip.write(objectMapper.writeValueAsBytes(manifest));
-      zip.closeEntry();
-    } catch (IOException e) {
-      throw new ImportException("Failed to build package archive", e);
+            PackageManifest manifest = new PackageManifest(1, title, sourceFormat, manifestSections);
+            zip.putNextEntry(new ZipEntry("manifest.json"));
+            zip.write(objectMapper.writeValueAsBytes(manifest));
+            zip.closeEntry();
+        } catch (IOException e) {
+            throw new ImportException("Failed to build package archive", e);
+        }
+        return buffer.toByteArray();
     }
-    return buffer.toByteArray();
-  }
 
-  public String extractPlainText(List<ImportedSection> sections) {
-    StringBuilder text = new StringBuilder();
-    for (ImportedSection section : sections) {
-      text.append(Jsoup.parse(section.html()).text()).append('\n');
+    public String extractPlainText(List<ImportedSection> sections) {
+        StringBuilder text = new StringBuilder();
+        for (ImportedSection section : sections) {
+            text.append(Jsoup.parse(section.html()).text()).append('\n');
+        }
+        return text.toString().strip();
     }
-    return text.toString().strip();
-  }
 }

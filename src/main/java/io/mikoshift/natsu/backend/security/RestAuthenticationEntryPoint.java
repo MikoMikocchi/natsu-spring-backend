@@ -19,17 +19,14 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-  private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-  @Override
-  public void commence(
-      HttpServletRequest request,
-      HttpServletResponse response,
-      AuthenticationException authException)
-      throws IOException {
-    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-    response.setContentType("application/json");
-    objectMapper.writeValue(
-        response.getWriter(), Map.of("errors", Map.of("base", List.of("Unauthorized"))));
-  }
+    @Override
+    public void commence(
+            HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
+            throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        objectMapper.writeValue(response.getWriter(), Map.of("errors", Map.of("base", List.of("Unauthorized"))));
+    }
 }

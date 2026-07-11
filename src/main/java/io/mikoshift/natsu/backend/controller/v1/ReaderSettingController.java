@@ -21,22 +21,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ReaderSettingController {
 
-  private final ReaderSettingService readerSettingService;
-  private final ServerTimeService serverTimeService;
+    private final ReaderSettingService readerSettingService;
+    private final ServerTimeService serverTimeService;
 
-  @GetMapping
-  ReaderSettingShowResponse show(@AuthenticationPrincipal User user) {
-    return toResponse(readerSettingService.getOrCreate(user));
-  }
+    @GetMapping
+    ReaderSettingShowResponse show(@AuthenticationPrincipal User user) {
+        return toResponse(readerSettingService.getOrCreate(user));
+    }
 
-  @PatchMapping
-  ReaderSettingShowResponse update(
-      @AuthenticationPrincipal User user, @Valid @RequestBody ReaderSettingUpdateRequest request) {
-    return toResponse(readerSettingService.update(user, request));
-  }
+    @PatchMapping
+    ReaderSettingShowResponse update(
+            @AuthenticationPrincipal User user, @Valid @RequestBody ReaderSettingUpdateRequest request) {
+        return toResponse(readerSettingService.update(user, request));
+    }
 
-  private ReaderSettingShowResponse toResponse(ReaderSetting settings) {
-    return new ReaderSettingShowResponse(
-        ReaderSettingResponse.from(settings), serverTimeService.nowMs());
-  }
+    private ReaderSettingShowResponse toResponse(ReaderSetting settings) {
+        return new ReaderSettingShowResponse(ReaderSettingResponse.from(settings), serverTimeService.nowMs());
+    }
 }

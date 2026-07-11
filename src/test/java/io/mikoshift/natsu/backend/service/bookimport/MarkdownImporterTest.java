@@ -8,30 +8,30 @@ import org.junit.jupiter.api.Test;
 
 class MarkdownImporterTest {
 
-  private final MarkdownImporter importer = new MarkdownImporter();
+    private final MarkdownImporter importer = new MarkdownImporter();
 
-  @Test
-  void extractsTitleFromLeadingH1AndRendersHtml() {
-    byte[] bytes = "# My Book\n\nSome *emphasised* text.".getBytes(StandardCharsets.UTF_8);
+    @Test
+    void extractsTitleFromLeadingH1AndRendersHtml() {
+        byte[] bytes = "# My Book\n\nSome *emphasised* text.".getBytes(StandardCharsets.UTF_8);
 
-    ImportedBook book = importer.importFrom(bytes);
+        ImportedBook book = importer.importFrom(bytes);
 
-    assertThat(book.title()).isEqualTo("My Book");
-    assertThat(book.sections()).hasSize(1);
-    assertThat(book.sections().get(0).html()).contains("<em>emphasised</em>");
-  }
+        assertThat(book.title()).isEqualTo("My Book");
+        assertThat(book.sections()).hasSize(1);
+        assertThat(book.sections().get(0).html()).contains("<em>emphasised</em>");
+    }
 
-  @Test
-  void hasNullTitleWhenNoLeadingH1() {
-    byte[] bytes = "Just a paragraph, no heading.".getBytes(StandardCharsets.UTF_8);
+    @Test
+    void hasNullTitleWhenNoLeadingH1() {
+        byte[] bytes = "Just a paragraph, no heading.".getBytes(StandardCharsets.UTF_8);
 
-    ImportedBook book = importer.importFrom(bytes);
+        ImportedBook book = importer.importFrom(bytes);
 
-    assertThat(book.title()).isNull();
-  }
+        assertThat(book.title()).isNull();
+    }
 
-  @Test
-  void rejectsEmptyFile() {
-    assertThatThrownBy(() -> importer.importFrom(new byte[0])).isInstanceOf(ImportException.class);
-  }
+    @Test
+    void rejectsEmptyFile() {
+        assertThatThrownBy(() -> importer.importFrom(new byte[0])).isInstanceOf(ImportException.class);
+    }
 }

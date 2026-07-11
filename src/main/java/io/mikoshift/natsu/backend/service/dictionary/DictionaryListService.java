@@ -15,21 +15,21 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DictionaryListService {
 
-  private static final int MAX_PER_PAGE = 100;
+    private static final int MAX_PER_PAGE = 100;
 
-  private final DictionaryRepository dictionaryRepository;
-  private final DictionaryEnablementService dictionaryEnablementService;
+    private final DictionaryRepository dictionaryRepository;
+    private final DictionaryEnablementService dictionaryEnablementService;
 
-  @Transactional(readOnly = true)
-  public Page<Dictionary> list(int page, int perPage) {
-    int boundedPerPage = Math.min(Math.max(perPage, 1), MAX_PER_PAGE);
-    int boundedPage = Math.max(page, 1);
-    return dictionaryRepository.findAll(PageRequest.of(boundedPage - 1, boundedPerPage));
-  }
+    @Transactional(readOnly = true)
+    public Page<Dictionary> list(int page, int perPage) {
+        int boundedPerPage = Math.min(Math.max(perPage, 1), MAX_PER_PAGE);
+        int boundedPage = Math.max(page, 1);
+        return dictionaryRepository.findAll(PageRequest.of(boundedPage - 1, boundedPerPage));
+    }
 
-  @Transactional(readOnly = true)
-  public boolean isEnabled(User user, Dictionary dictionary) {
-    Set<UUID> disabled = dictionaryEnablementService.disabledDictionaryIds(user);
-    return !disabled.contains(dictionary.getId());
-  }
+    @Transactional(readOnly = true)
+    public boolean isEnabled(User user, Dictionary dictionary) {
+        Set<UUID> disabled = dictionaryEnablementService.disabledDictionaryIds(user);
+        return !disabled.contains(dictionary.getId());
+    }
 }

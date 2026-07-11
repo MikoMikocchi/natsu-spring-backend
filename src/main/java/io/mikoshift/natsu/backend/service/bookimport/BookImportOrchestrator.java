@@ -27,50 +27,48 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class BookImportOrchestrator {
 
-  private final BookImportPersistence persistence;
-  private final BookImporterRegistry importerRegistry;
-  private final PackageBuilder packageBuilder;
-  private final PackageStorageService packageStorageService;
+    private final BookImportPersistence persistence;
+    private final BookImporterRegistry importerRegistry;
+    private final PackageBuilder packageBuilder;
+    private final PackageStorageService packageStorageService;
 
-  @Async("bookImportExecutor")
-  @Retryable(
-      retryFor = TransientImportException.class,
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000, multiplier = 2))
-  public void importAsync(UUID documentId, byte[] sourceBytes, String fallbackTitle) {
-    Document document = persistence.findPending(documentId);
-    if (document == null) {
-      return;
+    @Async("bookImportExecutor")
+    @Retryable(
+            retryFor = TransientImportException.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, multiplier = 2))
+    public void importAsync(UUID documentId, byte[] sourceBytes, String fallbackTitle) {
+        Document document = persistence.findPending(documentId);
+        if (document == null) {
+            return;
+        }
+
+        try {
+            BookImporter importer = importerRegistry.forFormat(document.getSourceFormat());
+            ImportedBook book = importer.importFrom(sourceBytes);
+            String title = book.title() != null && !book.title().isBlank() ? book.title() : fallbackTitle;
+            String plainText = packageBuilder.extractPlainText(book.sections());
+            byte[] packageZip = packageBuilder.buildZip(title, document.getSourceFormat(), book.sections());
+
+            StoredPackage stored = store(documentId, packageZip);
+            persistence.applySuccess(documentId, title, plainText.length(), plainText, stored);
+        } catch (ImportException e) {
+            log.warn("Import of document {} failed permanently: {}", documentId, e.getMessage());
+            persistence.markFailed(documentId, e.getMessage());
+        }
     }
 
-    try {
-      BookImporter importer = importerRegistry.forFormat(document.getSourceFormat());
-      ImportedBook book = importer.importFrom(sourceBytes);
-      String title = book.title() != null && !book.title().isBlank() ? book.title() : fallbackTitle;
-      String plainText = packageBuilder.extractPlainText(book.sections());
-      byte[] packageZip =
-          packageBuilder.buildZip(title, document.getSourceFormat(), book.sections());
-
-      StoredPackage stored = store(documentId, packageZip);
-      persistence.applySuccess(documentId, title, plainText.length(), plainText, stored);
-    } catch (ImportException e) {
-      log.warn("Import of document {} failed permanently: {}", documentId, e.getMessage());
-      persistence.markFailed(documentId, e.getMessage());
+    @Recover
+    public void recover(TransientImportException e, UUID documentId, byte[] sourceBytes, String fallbackTitle) {
+        log.error("Import of document {} failed after retries", documentId, e);
+        persistence.markFailed(documentId, "Import failed after repeated storage errors");
     }
-  }
 
-  @Recover
-  public void recover(
-      TransientImportException e, UUID documentId, byte[] sourceBytes, String fallbackTitle) {
-    log.error("Import of document {} failed after retries", documentId, e);
-    persistence.markFailed(documentId, "Import failed after repeated storage errors");
-  }
-
-  private StoredPackage store(UUID documentId, byte[] packageZip) {
-    try {
-      return packageStorageService.store(documentId, packageZip);
-    } catch (UncheckedIOException e) {
-      throw new TransientImportException("Failed to write package for document " + documentId, e);
+    private StoredPackage store(UUID documentId, byte[] packageZip) {
+        try {
+            return packageStorageService.store(documentId, packageZip);
+        } catch (UncheckedIOException e) {
+            throw new TransientImportException("Failed to write package for document " + documentId, e);
+        }
     }
-  }
 }

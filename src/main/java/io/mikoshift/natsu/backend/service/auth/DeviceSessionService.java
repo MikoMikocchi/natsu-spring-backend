@@ -15,27 +15,24 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DeviceSessionService {
 
-  private final AuthTokenRepository authTokenRepository;
+    private final AuthTokenRepository authTokenRepository;
 
-  @Transactional(readOnly = true)
-  public List<DeviceSessionResponse> list(User user, AuthToken currentToken) {
-    return authTokenRepository.findAllByUserAndRevokedAtIsNullOrderByCreatedAtDesc(user).stream()
-        .map(
-            token ->
-                new DeviceSessionResponse(
-                    token.getId(),
-                    token.getName(),
-                    token.getCreatedAt(),
-                    token.getId().equals(currentToken.getId())))
-        .toList();
-  }
+    @Transactional(readOnly = true)
+    public List<DeviceSessionResponse> list(User user, AuthToken currentToken) {
+        return authTokenRepository.findAllByUserAndRevokedAtIsNullOrderByCreatedAtDesc(user).stream()
+                .map(token -> new DeviceSessionResponse(
+                        token.getId(),
+                        token.getName(),
+                        token.getCreatedAt(),
+                        token.getId().equals(currentToken.getId())))
+                .toList();
+    }
 
-  @Transactional
-  public void revoke(User user, Long tokenId) {
-    AuthToken token =
-        authTokenRepository
-            .findByIdAndUser(tokenId, user)
-            .orElseThrow(() -> new NotFoundException("Session not found"));
-    token.setRevokedAt(Instant.now());
-  }
+    @Transactional
+    public void revoke(User user, Long tokenId) {
+        AuthToken token = authTokenRepository
+                .findByIdAndUser(tokenId, user)
+                .orElseThrow(() -> new NotFoundException("Session not found"));
+        token.setRevokedAt(Instant.now());
+    }
 }

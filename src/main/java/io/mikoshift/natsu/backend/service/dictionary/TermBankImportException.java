@@ -6,11 +6,11 @@ package io.mikoshift.natsu.backend.service.dictionary;
  */
 public class TermBankImportException extends RuntimeException {
 
-  public TermBankImportException(String message) {
-    super(message);
-  }
+    public TermBankImportException(String message) {
+        super(message);
+    }
 
-  public TermBankImportException(String message, Throwable cause) {
-    super(message, cause);
-  }
+    public TermBankImportException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

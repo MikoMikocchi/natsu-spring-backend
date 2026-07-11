@@ -19,13 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DictionaryEnablementService {
 
-  private final UserDictionarySettingRepository userDictionarySettingRepository;
+    private final UserDictionarySettingRepository userDictionarySettingRepository;
 
-  @Cacheable(
-      cacheNames = CacheConfig.DICT_ENABLED_IDS_CACHE,
-      key = "#user.id + ':' + #user.dictCacheVersion")
-  @Transactional(readOnly = true)
-  public Set<UUID> disabledDictionaryIds(User user) {
-    return userDictionarySettingRepository.findDisabledDictionaryIdsByUser(user);
-  }
+    @Cacheable(cacheNames = CacheConfig.DICT_ENABLED_IDS_CACHE, key = "#user.id + ':' + #user.dictCacheVersion")
+    @Transactional(readOnly = true)
+    public Set<UUID> disabledDictionaryIds(User user) {
+        return userDictionarySettingRepository.findDisabledDictionaryIdsByUser(user);
+    }
 }

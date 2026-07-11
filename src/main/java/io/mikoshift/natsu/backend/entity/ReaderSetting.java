@@ -24,52 +24,52 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 public class ReaderSetting {
 
-  @Id
-  @Column(name = "user_id")
-  private Long userId;
+    @Id
+    @Column(name = "user_id")
+    private Long userId;
 
-  @OneToOne(fetch = FetchType.EAGER)
-  @MapsId
-  @JoinColumn(name = "user_id")
-  private User user;
+    @OneToOne(fetch = FetchType.EAGER)
+    @MapsId
+    @JoinColumn(name = "user_id")
+    private User user;
 
-  @Column(name = "font_size_sp", nullable = false)
-  private double fontSizeSp = 16.0;
+    @Column(name = "font_size_sp", nullable = false)
+    private double fontSizeSp = 16.0;
 
-  @Column(name = "line_spacing_multiplier", nullable = false)
-  private double lineSpacingMultiplier = 1.8;
+    @Column(name = "line_spacing_multiplier", nullable = false)
+    private double lineSpacingMultiplier = 1.8;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "theme", nullable = false)
-  private Theme theme = Theme.LIGHT;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "theme", nullable = false)
+    private Theme theme = Theme.LIGHT;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "furigana_mode", nullable = false)
-  private FuriganaMode furiganaMode = FuriganaMode.OFF;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "furigana_mode", nullable = false)
+    private FuriganaMode furiganaMode = FuriganaMode.OFF;
 
-  /**
-   * Client-authoritative logical clock used to resolve update conflicts; not a JPA-managed
-   * timestamp.
-   */
-  @Column(name = "updated_at_ms", nullable = false)
-  private long updatedAtMs = 0L;
+    /**
+     * Client-authoritative logical clock used to resolve update conflicts; not a JPA-managed
+     * timestamp.
+     */
+    @Column(name = "updated_at_ms", nullable = false)
+    private long updatedAtMs = 0L;
 
-  @CreationTimestamp
-  @Column(name = "created_at", nullable = false, updatable = false)
-  private Instant createdAt;
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
-  @UpdateTimestamp
-  @Column(name = "updated_at", nullable = false)
-  private Instant updatedAt;
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 
-  public enum Theme {
-    LIGHT,
-    DARK,
-    SEPIA
-  }
+    public enum Theme {
+        LIGHT,
+        DARK,
+        SEPIA
+    }
 
-  public enum FuriganaMode {
-    OFF,
-    ALWAYS
-  }
+    public enum FuriganaMode {
+        OFF,
+        ALWAYS
+    }
 }

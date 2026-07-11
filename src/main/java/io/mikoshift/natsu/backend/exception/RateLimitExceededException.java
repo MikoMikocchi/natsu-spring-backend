@@ -11,10 +11,10 @@ import org.springframework.http.HttpStatus;
 @Getter
 public class RateLimitExceededException extends ApiException {
 
-  private final int retryAfterSeconds;
+    private final int retryAfterSeconds;
 
-  public RateLimitExceededException(int retryAfterSeconds) {
-    super(HttpStatus.TOO_MANY_REQUESTS, "base", "Too many requests, try again later");
-    this.retryAfterSeconds = retryAfterSeconds;
-  }
+    public RateLimitExceededException(int retryAfterSeconds) {
+        super(HttpStatus.TOO_MANY_REQUESTS, "base", "Too many requests, try again later");
+        this.retryAfterSeconds = retryAfterSeconds;
+    }
 }

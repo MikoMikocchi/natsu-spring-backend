@@ -14,55 +14,52 @@ import org.junit.jupiter.api.Test;
 
 class EpubImporterTest {
 
-  private final EpubImporter importer = new EpubImporter();
+    private final EpubImporter importer = new EpubImporter();
 
-  @Test
-  void parsesTitleAndSpineOrderedChapters() {
-    byte[] epub =
-        buildEpub(
-            Map.of(
+    @Test
+    void parsesTitleAndSpineOrderedChapters() {
+        byte[] epub = buildEpub(Map.of(
                 "META-INF/container.xml", containerXml("OEBPS/content.opf"),
                 "OEBPS/content.opf", opfXml(),
                 "OEBPS/chapter1.xhtml", chapterXhtml("Chapter One", "Hello world."),
                 "OEBPS/chapter2.xhtml", chapterXhtml("Chapter Two", "Second chapter content.")));
 
-    ImportedBook book = importer.importFrom(epub);
+        ImportedBook book = importer.importFrom(epub);
 
-    assertThat(book.title()).isEqualTo("My Test Book");
-    assertThat(book.sections()).hasSize(2);
-    assertThat(book.sections().get(0).title()).isEqualTo("Chapter One");
-    assertThat(book.sections().get(0).html()).contains("Hello world.");
-    assertThat(book.sections().get(1).title()).isEqualTo("Chapter Two");
-    assertThat(book.sections().get(1).html()).contains("Second chapter content.");
-  }
+        assertThat(book.title()).isEqualTo("My Test Book");
+        assertThat(book.sections()).hasSize(2);
+        assertThat(book.sections().get(0).title()).isEqualTo("Chapter One");
+        assertThat(book.sections().get(0).html()).contains("Hello world.");
+        assertThat(book.sections().get(1).title()).isEqualTo("Chapter Two");
+        assertThat(book.sections().get(1).html()).contains("Second chapter content.");
+    }
 
-  @Test
-  void rejectsArchiveWithoutContainerXml() {
-    byte[] epub = buildEpub(Map.of("OEBPS/content.opf", opfXml()));
+    @Test
+    void rejectsArchiveWithoutContainerXml() {
+        byte[] epub = buildEpub(Map.of("OEBPS/content.opf", opfXml()));
 
-    assertThatThrownBy(() -> importer.importFrom(epub)).isInstanceOf(ImportException.class);
-  }
+        assertThatThrownBy(() -> importer.importFrom(epub)).isInstanceOf(ImportException.class);
+    }
 
-  @Test
-  void rejectsNonZipInput() {
-    assertThatThrownBy(() -> importer.importFrom("not a zip".getBytes(StandardCharsets.UTF_8)))
-        .isInstanceOf(ImportException.class);
-  }
+    @Test
+    void rejectsNonZipInput() {
+        assertThatThrownBy(() -> importer.importFrom("not a zip".getBytes(StandardCharsets.UTF_8)))
+                .isInstanceOf(ImportException.class);
+    }
 
-  private static String containerXml(String opfPath) {
-    return """
+    private static String containerXml(String opfPath) {
+        return """
                 <?xml version="1.0"?>
                 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
                   <rootfiles>
                     <rootfile full-path="%s" media-type="application/oebps-package+xml"/>
                   </rootfiles>
                 </container>
-                """
-        .formatted(opfPath);
-  }
+                """.formatted(opfPath);
+    }
 
-  private static String opfXml() {
-    return """
+    private static String opfXml() {
+        return """
                 <?xml version="1.0"?>
                 <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
                   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -78,32 +75,31 @@ class EpubImporterTest {
                   </spine>
                 </package>
                 """;
-  }
+    }
 
-  private static String chapterXhtml(String heading, String paragraph) {
-    return """
+    private static String chapterXhtml(String heading, String paragraph) {
+        return """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <html xmlns="http://www.w3.org/1999/xhtml">
                 <head><title>%s</title></head>
                 <body><h1>%s</h1><p>%s</p></body>
                 </html>
-                """
-        .formatted(heading, heading, paragraph);
-  }
-
-  private static byte[] buildEpub(Map<String, String> entries) {
-    try {
-      ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-      try (ZipOutputStream zip = new ZipOutputStream(buffer, StandardCharsets.UTF_8)) {
-        for (Map.Entry<String, String> entry : entries.entrySet()) {
-          zip.putNextEntry(new ZipEntry(entry.getKey()));
-          zip.write(entry.getValue().getBytes(StandardCharsets.UTF_8));
-          zip.closeEntry();
-        }
-      }
-      return buffer.toByteArray();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
+                """.formatted(heading, heading, paragraph);
     }
-  }
+
+    private static byte[] buildEpub(Map<String, String> entries) {
+        try {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            try (ZipOutputStream zip = new ZipOutputStream(buffer, StandardCharsets.UTF_8)) {
+                for (Map.Entry<String, String> entry : entries.entrySet()) {
+                    zip.putNextEntry(new ZipEntry(entry.getKey()));
+                    zip.write(entry.getValue().getBytes(StandardCharsets.UTF_8));
+                    zip.closeEntry();
+                }
+            }
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 }

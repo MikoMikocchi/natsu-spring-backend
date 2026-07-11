@@ -7,4 +7,4 @@ package io.mikoshift.natsu.backend.service.dictionary;
  * reject false-positive candidates that happen to match no real dictionary entry's tag.
  */
 public record DeinflectionRule(
-    String suffixIn, String suffixOut, String ruleTagOut, String ruleName, String description) {}
+        String suffixIn, String suffixOut, String ruleTagOut, String ruleName, String description) {}

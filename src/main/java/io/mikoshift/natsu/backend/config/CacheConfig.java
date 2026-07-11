@@ -20,26 +20,25 @@ import org.springframework.context.annotation.Configuration;
 @EnableCaching
 public class CacheConfig {
 
-  public static final String DICT_LOOKUP_CACHE = "dictLookup";
-  public static final String DICT_ENABLED_IDS_CACHE = "dictEnabledDictIds";
+    public static final String DICT_LOOKUP_CACHE = "dictLookup";
+    public static final String DICT_ENABLED_IDS_CACHE = "dictEnabledDictIds";
 
-  @Bean
-  CacheManager cacheManager() {
-    SimpleCacheManager manager = new SimpleCacheManager();
-    manager.setCaches(
-        List.of(
-            new CaffeineCache(
-                DICT_LOOKUP_CACHE,
-                Caffeine.newBuilder()
-                    .expireAfterWrite(Duration.ofMinutes(5))
-                    .maximumSize(10_000)
-                    .build()),
-            new CaffeineCache(
-                DICT_ENABLED_IDS_CACHE,
-                Caffeine.newBuilder()
-                    .expireAfterWrite(Duration.ofMinutes(30))
-                    .maximumSize(10_000)
-                    .build())));
-    return manager;
-  }
+    @Bean
+    CacheManager cacheManager() {
+        SimpleCacheManager manager = new SimpleCacheManager();
+        manager.setCaches(List.of(
+                new CaffeineCache(
+                        DICT_LOOKUP_CACHE,
+                        Caffeine.newBuilder()
+                                .expireAfterWrite(Duration.ofMinutes(5))
+                                .maximumSize(10_000)
+                                .build()),
+                new CaffeineCache(
+                        DICT_ENABLED_IDS_CACHE,
+                        Caffeine.newBuilder()
+                                .expireAfterWrite(Duration.ofMinutes(30))
+                                .maximumSize(10_000)
+                                .build())));
+        return manager;
+    }
 }

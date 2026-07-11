@@ -10,11 +10,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface UserDictionarySettingRepository
-    extends JpaRepository<UserDictionarySetting, Long> {
+public interface UserDictionarySettingRepository extends JpaRepository<UserDictionarySetting, Long> {
 
-  Optional<UserDictionarySetting> findByUserAndDictionary(User user, Dictionary dictionary);
+    Optional<UserDictionarySetting> findByUserAndDictionary(User user, Dictionary dictionary);
 
-  @Query("select s.dictionary.id from UserDictionarySetting s where s.user = :user")
-  Set<UUID> findDisabledDictionaryIdsByUser(@Param("user") User user);
+    @Query("select s.dictionary.id from UserDictionarySetting s where s.user = :user")
+    Set<UUID> findDisabledDictionaryIdsByUser(@Param("user") User user);
 }

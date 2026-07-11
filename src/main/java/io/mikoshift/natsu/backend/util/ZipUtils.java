@@ -11,24 +11,23 @@ import java.util.zip.ZipInputStream;
 
 public final class ZipUtils {
 
-  private ZipUtils() {}
+    private ZipUtils() {}
 
-  /**
-   * @throws UncheckedIOException if the bytes aren't a readable zip archive.
-   */
-  public static Map<String, byte[]> readEntries(byte[] zipBytes) {
-    Map<String, byte[]> entries = new LinkedHashMap<>();
-    try (ZipInputStream zip =
-        new ZipInputStream(new ByteArrayInputStream(zipBytes), StandardCharsets.UTF_8)) {
-      ZipEntry entry;
-      while ((entry = zip.getNextEntry()) != null) {
-        if (!entry.isDirectory()) {
-          entries.put(entry.getName(), zip.readAllBytes());
+    /**
+     * @throws UncheckedIOException if the bytes aren't a readable zip archive.
+     */
+    public static Map<String, byte[]> readEntries(byte[] zipBytes) {
+        Map<String, byte[]> entries = new LinkedHashMap<>();
+        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(zipBytes), StandardCharsets.UTF_8)) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                if (!entry.isDirectory()) {
+                    entries.put(entry.getName(), zip.readAllBytes());
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-      }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
+        return entries;
     }
-    return entries;
-  }
 }

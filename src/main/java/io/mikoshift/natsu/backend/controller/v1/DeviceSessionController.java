@@ -20,17 +20,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class DeviceSessionController {
 
-  private final DeviceSessionService deviceSessionService;
+    private final DeviceSessionService deviceSessionService;
 
-  @GetMapping
-  List<DeviceSessionResponse> list(
-      @AuthenticationPrincipal User user, Authentication authentication) {
-    return deviceSessionService.list(user, (AuthToken) authentication.getCredentials());
-  }
+    @GetMapping
+    List<DeviceSessionResponse> list(@AuthenticationPrincipal User user, Authentication authentication) {
+        return deviceSessionService.list(user, (AuthToken) authentication.getCredentials());
+    }
 
-  @DeleteMapping("/{id}")
-  ResponseEntity<Void> revoke(@AuthenticationPrincipal User user, @PathVariable Long id) {
-    deviceSessionService.revoke(user, id);
-    return ResponseEntity.noContent().build();
-  }
+    @DeleteMapping("/{id}")
+    ResponseEntity<Void> revoke(@AuthenticationPrincipal User user, @PathVariable Long id) {
+        deviceSessionService.revoke(user, id);
+        return ResponseEntity.noContent().build();
+    }
 }

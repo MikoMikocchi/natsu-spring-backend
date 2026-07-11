@@ -4,10 +4,10 @@ import io.mikoshift.natsu.backend.entity.Document.SourceFormat;
 
 public interface BookImporter {
 
-  SourceFormat supportedFormat();
+    SourceFormat supportedFormat();
 
-  /**
-   * @throws ImportException if the source bytes are not a well-formed document of this format.
-   */
-  ImportedBook importFrom(byte[] sourceBytes);
+    /**
+     * @throws ImportException if the source bytes are not a well-formed document of this format.
+     */
+    ImportedBook importFrom(byte[] sourceBytes);
 }

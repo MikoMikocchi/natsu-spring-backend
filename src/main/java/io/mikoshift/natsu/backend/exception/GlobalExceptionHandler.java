@@ -20,55 +20,44 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler(RateLimitExceededException.class)
-  public ResponseEntity<Map<String, Object>> handleRateLimitExceeded(
-      RateLimitExceededException ex) {
-    return ResponseEntity.status(ex.getStatus())
-        .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
-        .body(Map.of("errors", ex.getErrors()));
-  }
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleRateLimitExceeded(RateLimitExceededException ex) {
+        return ResponseEntity.status(ex.getStatus())
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(Map.of("errors", ex.getErrors()));
+    }
 
-  @ExceptionHandler(ApiException.class)
-  public ResponseEntity<Map<String, Object>> handleApiException(ApiException ex) {
-    return ResponseEntity.status(ex.getStatus()).body(Map.of("errors", ex.getErrors()));
-  }
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<Map<String, Object>> handleApiException(ApiException ex) {
+        return ResponseEntity.status(ex.getStatus()).body(Map.of("errors", ex.getErrors()));
+    }
 
-  @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
-    Map<String, List<String>> errors = new LinkedHashMap<>();
-    ex.getBindingResult()
-        .getFieldErrors()
-        .forEach(
-            fieldError ->
-                errors
-                    .computeIfAbsent(toSnakeCase(fieldError.getField()), key -> new ArrayList<>())
-                    .add(fieldError.getDefaultMessage()));
-    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("errors", errors));
-  }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
+        Map<String, List<String>> errors = new LinkedHashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(fieldError -> errors.computeIfAbsent(
+                        toSnakeCase(fieldError.getField()), key -> new ArrayList<>())
+                .add(fieldError.getDefaultMessage()));
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("errors", errors));
+    }
 
-  @ExceptionHandler(ConstraintViolationException.class)
-  public ResponseEntity<Map<String, Object>> handleConstraintViolation(
-      ConstraintViolationException ex) {
-    Map<String, List<String>> errors = new LinkedHashMap<>();
-    ex.getConstraintViolations()
-        .forEach(
-            violation -> {
-              String path = violation.getPropertyPath().toString();
-              String field = path.contains(".") ? path.substring(path.lastIndexOf('.') + 1) : path;
-              errors
-                  .computeIfAbsent(toSnakeCase(field), key -> new ArrayList<>())
-                  .add(violation.getMessage());
-            });
-    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("errors", errors));
-  }
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, List<String>> errors = new LinkedHashMap<>();
+        ex.getConstraintViolations().forEach(violation -> {
+            String path = violation.getPropertyPath().toString();
+            String field = path.contains(".") ? path.substring(path.lastIndexOf('.') + 1) : path;
+            errors.computeIfAbsent(toSnakeCase(field), key -> new ArrayList<>()).add(violation.getMessage());
+        });
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("errors", errors));
+    }
 
-  @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
-    return ResponseEntity.status(HttpStatus.FORBIDDEN)
-        .body(Map.of("errors", Map.of("base", List.of("Forbidden"))));
-  }
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("errors", Map.of("base", List.of("Forbidden"))));
+    }
 
-  private static String toSnakeCase(String camelCase) {
-    return camelCase.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
-  }
+    private static String toSnakeCase(String camelCase) {
+        return camelCase.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+    }
 }

@@ -13,8 +13,8 @@ import jakarta.validation.constraints.PositiveOrZero;
  * stored.
  */
 public record ReaderSettingUpdateRequest(
-    @DecimalMin("10.0") @DecimalMax("40.0") Double fontSizeSp,
-    @DecimalMin("1.0") @DecimalMax("3.0") Double lineSpacingMultiplier,
-    Theme theme,
-    FuriganaMode furiganaMode,
-    @NotNull @PositiveOrZero Long updatedAtMs) {}
+        @DecimalMin("10.0") @DecimalMax("40.0") Double fontSizeSp,
+        @DecimalMin("1.0") @DecimalMax("3.0") Double lineSpacingMultiplier,
+        Theme theme,
+        FuriganaMode furiganaMode,
+        @NotNull @PositiveOrZero Long updatedAtMs) {}

@@ -202,7 +202,7 @@
             </plugin>
             <plugin>
                 <!--
-                    Enforces consistent Java formatting via google-java-format.
+                    Enforces consistent Java formatting via palantir-java-format (4-space indent).
                     Bound to the `verify` phase (not `test`/`package`) so that
                     `./mvnw test` keeps giving fast, format-agnostic feedback
                     during day-to-day development, while `./mvnw verify` (and CI)
@@ -214,10 +214,7 @@
                 <version>3.8.0</version>
                 <configuration>
                     <java>
-                        <googleJavaFormat>
-                            <version>1.35.0</version>
-                            <style>GOOGLE</style>
-                        </googleJavaFormat>
+                        <palantirJavaFormat/>
                         <removeUnusedImports/>
                         <trimTrailingWhitespace/>
                         <endWithNewline/>

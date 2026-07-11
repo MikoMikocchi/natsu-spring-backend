@@ -58,57 +58,54 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class StaleImportRecoveryService {
 
-  private final DocumentRepository documentRepository;
-  private final BookImportPersistence persistence;
-  private final NatsuProperties properties;
+    private final DocumentRepository documentRepository;
+    private final BookImportPersistence persistence;
+    private final NatsuProperties properties;
 
-  /**
-   * {@code initialDelay = 0} makes this run once immediately on startup -- catching anything
-   * stranded by a previous instance's crash/restart -- and then every {@code
-   * check-interval-minutes} after that, catching anything that gets stuck mid-run without a restart
-   * (e.g. a thread pool exception that didn't route through the normal retry/failure path). One
-   * scheduled method covers both triggers the ticket asks for: there's nothing a dedicated startup
-   * hook would do differently from the first tick of this schedule.
-   */
-  @Scheduled(
-      initialDelayString = "0",
-      fixedDelayString = "${natsu.book-import-recovery.check-interval-minutes:5}",
-      timeUnit = TimeUnit.MINUTES)
-  public void recoverStaleImports() {
-    NatsuProperties.BookImportRecovery config = properties.bookImportRecovery();
-    if (!config.enabled()) {
-      return;
-    }
-    Instant cutoff = Instant.now().minus(config.staleAfterMinutes(), ChronoUnit.MINUTES);
+    /**
+     * {@code initialDelay = 0} makes this run once immediately on startup -- catching anything
+     * stranded by a previous instance's crash/restart -- and then every {@code
+     * check-interval-minutes} after that, catching anything that gets stuck mid-run without a restart
+     * (e.g. a thread pool exception that didn't route through the normal retry/failure path). One
+     * scheduled method covers both triggers the ticket asks for: there's nothing a dedicated startup
+     * hook would do differently from the first tick of this schedule.
+     */
+    @Scheduled(
+            initialDelayString = "0",
+            fixedDelayString = "${natsu.book-import-recovery.check-interval-minutes:5}",
+            timeUnit = TimeUnit.MINUTES)
+    public void recoverStaleImports() {
+        NatsuProperties.BookImportRecovery config = properties.bookImportRecovery();
+        if (!config.enabled()) {
+            return;
+        }
+        Instant cutoff = Instant.now().minus(config.staleAfterMinutes(), ChronoUnit.MINUTES);
 
-    List<Document> candidates =
-        documentRepository.findByStatusAndCreatedAtBefore(Document.Status.PENDING, cutoff);
-    for (Document candidate : candidates) {
-      // Calling out to BookImportPersistence (a separate Spring-managed bean) rather than a
-      // @Transactional method on this class -- an @Transactional method called via "this"
-      // bypasses the AOP proxy and would silently run without a transaction at all.
-      RecoveryOutcome outcome =
-          persistence.recoverStaleDocument(candidate.getId(), config.maxAttempts());
-      logOutcome(candidate.getId(), outcome, config.maxAttempts());
+        List<Document> candidates = documentRepository.findByStatusAndCreatedAtBefore(Document.Status.PENDING, cutoff);
+        for (Document candidate : candidates) {
+            // Calling out to BookImportPersistence (a separate Spring-managed bean) rather than a
+            // @Transactional method on this class -- an @Transactional method called via "this"
+            // bypasses the AOP proxy and would silently run without a transaction at all.
+            RecoveryOutcome outcome = persistence.recoverStaleDocument(candidate.getId(), config.maxAttempts());
+            logOutcome(candidate.getId(), outcome, config.maxAttempts());
+        }
     }
-  }
 
-  private void logOutcome(UUID documentId, RecoveryOutcome outcome, int maxAttempts) {
-    switch (outcome) {
-      case SKIPPED_NOT_PENDING ->
-          log.debug(
-              "Document {} was no longer PENDING by the time recovery ran; skipping", documentId);
-      case FAILED_STALE ->
-          log.warn(
-              "Document {} was stuck in PENDING past the staleness threshold; marking failed since "
-                  + "the original upload can't be resumed after a restart",
-              documentId);
-      case FAILED_ATTEMPTS_EXCEEDED ->
-          log.error(
-              "Document {} was recovered past the configured attempt cap ({}); marking failed. This is "
-                  + "unexpected -- recovery should normally resolve a document on its first pass",
-              documentId,
-              maxAttempts);
+    private void logOutcome(UUID documentId, RecoveryOutcome outcome, int maxAttempts) {
+        switch (outcome) {
+            case SKIPPED_NOT_PENDING ->
+                log.debug("Document {} was no longer PENDING by the time recovery ran; skipping", documentId);
+            case FAILED_STALE ->
+                log.warn(
+                        "Document {} was stuck in PENDING past the staleness threshold; marking failed since "
+                                + "the original upload can't be resumed after a restart",
+                        documentId);
+            case FAILED_ATTEMPTS_EXCEEDED ->
+                log.error(
+                        "Document {} was recovered past the configured attempt cap ({}); marking failed. This is "
+                                + "unexpected -- recovery should normally resolve a document on its first pass",
+                        documentId,
+                        maxAttempts);
+        }
     }
-  }
 }

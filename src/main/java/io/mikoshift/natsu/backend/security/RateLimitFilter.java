@@ -28,54 +28,48 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
-  private static final Map<String, String> LIMITED_PATHS =
-      Map.of(
-          "/v1/auth/login", "login",
-          "/v1/auth/register", "register",
-          "/v1/auth/password/forgot", "password-reset",
-          "/v1/auth/password/reset", "password-reset",
-          "/v1/auth/refresh", "refresh");
+    private static final Map<String, String> LIMITED_PATHS = Map.of(
+            "/v1/auth/login", "login",
+            "/v1/auth/register", "register",
+            "/v1/auth/password/forgot", "password-reset",
+            "/v1/auth/password/reset", "password-reset",
+            "/v1/auth/refresh", "refresh");
 
-  private final ObjectMapper objectMapper;
-  private final NatsuProperties properties;
-  private final RateLimiter rateLimiter;
+    private final ObjectMapper objectMapper;
+    private final NatsuProperties properties;
+    private final RateLimiter rateLimiter;
 
-  @Override
-  protected void doFilterInternal(
-      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-      throws ServletException, IOException {
-    String category =
-        "POST".equalsIgnoreCase(request.getMethod())
-            ? LIMITED_PATHS.get(request.getRequestURI())
-            : null;
-    if (category != null) {
-      NatsuProperties.RateLimit.Bucket config = bucketConfig(category);
-      if (!rateLimiter.tryConsume(category + "-ip", request.getRemoteAddr(), config)) {
-        writeTooManyRequests(response, config.windowSeconds());
-        return;
-      }
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        String category =
+                "POST".equalsIgnoreCase(request.getMethod()) ? LIMITED_PATHS.get(request.getRequestURI()) : null;
+        if (category != null) {
+            NatsuProperties.RateLimit.Bucket config = bucketConfig(category);
+            if (!rateLimiter.tryConsume(category + "-ip", request.getRemoteAddr(), config)) {
+                writeTooManyRequests(response, config.windowSeconds());
+                return;
+            }
+        }
+        filterChain.doFilter(request, response);
     }
-    filterChain.doFilter(request, response);
-  }
 
-  private NatsuProperties.RateLimit.Bucket bucketConfig(String category) {
-    NatsuProperties.RateLimit rateLimit = properties.rateLimit();
-    return switch (category) {
-      case "login" -> rateLimit.login();
-      case "register" -> rateLimit.register();
-      case "password-reset" -> rateLimit.passwordReset();
-      case "refresh" -> rateLimit.refresh();
-      default -> throw new IllegalStateException("Unknown rate limit category: " + category);
-    };
-  }
+    private NatsuProperties.RateLimit.Bucket bucketConfig(String category) {
+        NatsuProperties.RateLimit rateLimit = properties.rateLimit();
+        return switch (category) {
+            case "login" -> rateLimit.login();
+            case "register" -> rateLimit.register();
+            case "password-reset" -> rateLimit.passwordReset();
+            case "refresh" -> rateLimit.refresh();
+            default -> throw new IllegalStateException("Unknown rate limit category: " + category);
+        };
+    }
 
-  private void writeTooManyRequests(HttpServletResponse response, int retryAfterSeconds)
-      throws IOException {
-    response.setStatus(429);
-    response.setContentType("application/json");
-    response.setHeader(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfterSeconds));
-    objectMapper.writeValue(
-        response.getWriter(),
-        Map.of("errors", Map.of("base", List.of("Too many requests, try again later"))));
-  }
+    private void writeTooManyRequests(HttpServletResponse response, int retryAfterSeconds) throws IOException {
+        response.setStatus(429);
+        response.setContentType("application/json");
+        response.setHeader(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfterSeconds));
+        objectMapper.writeValue(
+                response.getWriter(), Map.of("errors", Map.of("base", List.of("Too many requests, try again later"))));
+    }
 }
