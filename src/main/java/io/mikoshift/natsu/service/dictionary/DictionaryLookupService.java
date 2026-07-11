@@ -111,11 +111,14 @@ public class DictionaryLookupService {
     }
 
     /**
-     * A blank rule_tags on the dictionary entry means the term carries no part-of-speech
-     * information to check against (e.g. some imported dictionaries leave it empty), so it's
-     * accepted unconditionally rather than rejected for "not matching" an absent tag.
+     * Accepts when either side carries no part-of-speech constraint: blank rule_tags on the
+     * dictionary entry, or an empty conditionsOut from a passthrough transform (e.g. sentence-final
+     * の/か).
      */
     private static boolean matchesRuleTags(List<String> conditionsOut, String ruleTags) {
+        if (conditionsOut == null || conditionsOut.isEmpty()) {
+            return true;
+        }
         if (ruleTags == null || ruleTags.isBlank()) {
             return true;
         }

@@ -195,6 +195,23 @@ class JapaneseDeinflectorTest {
     }
 
     @Test
+    void sentenceFinalParticlesCarryNoPartOfSpeechConstraint() {
+        Deinflection question = deinflector.deinflect("食べるか").stream()
+                .filter(d -> d.candidate().equals("食べる"))
+                .findFirst()
+                .orElseThrow();
+        Deinflection nominalizer = deinflector.deinflect("食べるの").stream()
+                .filter(d -> d.candidate().equals("食べる"))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(question.conditionsOut()).isEmpty();
+        assertThat(nominalizer.conditionsOut()).isEmpty();
+        assertThat(ConditionHierarchy.conditionsMatch(question.conditionsOut(), List.of("v1")))
+                .isTrue();
+    }
+
+    @Test
     void handlesPermissionTeMoIiForms() {
         assertThat(candidateWords("食べてもいい")).contains("食べる");
         assertThat(candidateWords("行かなくてもいい")).contains("行く");

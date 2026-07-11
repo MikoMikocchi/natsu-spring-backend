@@ -57,8 +57,15 @@ final class ConditionHierarchy {
         return remaining.isEmpty();
     }
 
-    /** True when a deinflection's grammatical category is compatible with a dictionary entry's rule tags. */
+    /**
+     * True when a deinflection's grammatical category is compatible with a dictionary entry's rule
+     * tags. An empty {@code conditionsOut} means the transform carries no part-of-speech constraint
+     * (e.g. sentence-final の/か particles) and matches any entry.
+     */
     static boolean conditionsMatch(List<String> conditionsOut, List<String> ruleTags) {
+        if (conditionsOut == null || conditionsOut.isEmpty()) {
+            return true;
+        }
         Set<String> expandedOut = expand(conditionsOut);
         expandedOut.retainAll(expand(ruleTags));
         return !expandedOut.isEmpty();

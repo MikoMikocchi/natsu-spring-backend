@@ -26,6 +26,12 @@ class ConditionHierarchyTest {
     }
 
     @Test
+    void emptyConditionsOutMatchesAnyRuleTags() {
+        assertThat(ConditionHierarchy.conditionsMatch(List.of(), List.of("v1"))).isTrue();
+        assertThat(ConditionHierarchy.conditionsMatch(List.of(), List.of("v5k", "n"))).isTrue();
+    }
+
+    @Test
     void anyConditionAlwaysMatchesForTheSurfaceForm() {
         assertThat(ConditionHierarchy.conditionInMatches(null, List.of("adj-i")))
                 .isTrue();
