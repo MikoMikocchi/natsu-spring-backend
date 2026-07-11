@@ -4,8 +4,10 @@ import io.mikoshift.natsu.config.NatsuProperties;
 import io.mikoshift.natsu.util.HashUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.FileSystemResource;
@@ -23,7 +25,21 @@ public class LocalDiskPackageStorageService implements PackageStorageService {
         try {
             Path path = packagePath(documentId);
             Files.createDirectories(path.getParent());
-            Files.write(path, content);
+            Path tempPath = Files.createTempFile(path.getParent(), documentId + ".", ".tmp");
+            try {
+                Files.write(tempPath, content);
+                try {
+                    Files.move(
+                            tempPath,
+                            path,
+                            StandardCopyOption.ATOMIC_MOVE,
+                            StandardCopyOption.REPLACE_EXISTING);
+                } catch (AtomicMoveNotSupportedException e) {
+                    Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } finally {
+                Files.deleteIfExists(tempPath);
+            }
             return new StoredPackage(content.length, HashUtils.sha256Hex(content));
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to store package for document " + documentId, e);
