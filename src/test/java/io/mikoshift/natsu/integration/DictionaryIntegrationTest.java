@@ -90,7 +90,7 @@ class DictionaryIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].word").value("食べる"))
                 .andExpect(jsonPath("$.data[0].match_kind").value("DEINFLECTION"))
-                .andExpect(jsonPath("$.data[0].rule_name").value("past tense"));
+                .andExpect(jsonPath("$.data[0].rule_name").value("past"));
 
         // Toggling off removes it from lookup results...
         mockMvc.perform(patch("/v1/dictionaries/" + dictionaryId + "/toggle")
