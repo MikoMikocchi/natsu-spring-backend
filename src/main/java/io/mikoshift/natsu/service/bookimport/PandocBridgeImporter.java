@@ -1,14 +1,12 @@
 package io.mikoshift.natsu.service.bookimport;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Bridges a format Pandoc understands (DOCX, RTF, ...) through the {@code pandoc} CLI into EPUB,
@@ -22,15 +20,22 @@ import lombok.extern.slf4j.Slf4j;
  * non-root user with nothing else on the filesystem worth reaching, which is the realistic
  * blast-radius limit for this deployment.
  */
-@Slf4j
 public abstract class PandocBridgeImporter implements BookImporter {
 
-    private static final Duration TIMEOUT = Duration.ofSeconds(30);
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
 
     private final EpubImporter epubImporter;
+    private final PandocRunner pandocRunner;
+    private final Duration timeout;
 
     protected PandocBridgeImporter(EpubImporter epubImporter) {
+        this(epubImporter, PandocRunner.DEFAULT, DEFAULT_TIMEOUT);
+    }
+
+    PandocBridgeImporter(EpubImporter epubImporter, PandocRunner pandocRunner, Duration timeout) {
         this.epubImporter = epubImporter;
+        this.pandocRunner = pandocRunner;
+        this.timeout = timeout;
     }
 
     protected abstract String sourceExtension();
@@ -67,41 +72,9 @@ public abstract class PandocBridgeImporter implements BookImporter {
     }
 
     private void runPandoc(Path input, Path output) {
-        ProcessBuilder builder = new ProcessBuilder(
-                        "pandoc", "--sandbox", "--standalone", input.toString(), "-o", output.toString())
-                .redirectErrorStream(true);
-        Process process;
-        try {
-            process = builder.start();
-        } catch (IOException e) {
-            throw new ImportException(
-                    "Pandoc is not available on this server; " + labelUpper() + " import is currently unsupported", e);
-        }
-
-        String processOutput;
-        try {
-            processOutput = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            process.destroyForcibly();
-            throw new ImportException("Failed to read pandoc output", e);
-        }
-
-        boolean finished;
-        try {
-            finished = process.waitFor(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            process.destroyForcibly();
-            throw new TransientImportException("Interrupted while waiting for pandoc", e);
-        }
-        if (!finished) {
-            process.destroyForcibly();
-            throw new ImportException("Pandoc conversion timed out");
-        }
-        if (process.exitValue() != 0) {
-            log.warn("Pandoc conversion failed (exit {}): {}", process.exitValue(), processOutput);
-            throw new ImportException("Could not convert " + labelUpper() + " file: malformed or unsupported document");
-        }
+        List<String> command = List.of(
+                "pandoc", "--sandbox", "--standalone", input.toString(), "-o", output.toString());
+        pandocRunner.run(command, timeout, labelUpper());
     }
 
     private String labelUpper() {
