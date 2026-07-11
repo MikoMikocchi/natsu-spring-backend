@@ -102,8 +102,11 @@ class RateLimitIntegrationTest {
 
     @Test
     void registerIsThrottledPerIp() throws Exception {
+        String clientIp = "203.0.113.10";
+
         for (int i = 0; i < 2; i++) {
             mockMvc.perform(post("/v1/auth/register")
+                            .header("X-Forwarded-For", clientIp)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {"name":"Reader","email":"register-throttle-%d@example.com","password":"password123","password_confirmation":"password123"}
@@ -112,6 +115,7 @@ class RateLimitIntegrationTest {
         }
 
         mockMvc.perform(post("/v1/auth/register")
+                        .header("X-Forwarded-For", clientIp)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name":"Reader","email":"register-throttle-overflow@example.com","password":"password123","password_confirmation":"password123"}
@@ -119,6 +123,14 @@ class RateLimitIntegrationTest {
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"))
                 .andExpect(jsonPath("$.errors.base").exists());
+
+        mockMvc.perform(post("/v1/auth/register")
+                        .header("X-Forwarded-For", "203.0.113.11")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Reader","email":"register-throttle-other-client@example.com","password":"password123","password_confirmation":"password123"}
+                                """))
+                .andExpect(status().isCreated());
     }
 
     @Test

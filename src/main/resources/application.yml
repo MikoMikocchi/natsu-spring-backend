@@ -38,6 +38,10 @@ spring:
 
 server:
   port: 3000
+  # Required for per-IP rate limiting (and any other getRemoteAddr() use) when deployed behind a
+  # reverse proxy/load balancer. Without this, every client appears as the proxy address and one
+  # aggressive client can exhaust shared auth throttles for everyone.
+  forward-headers-strategy: framework
 
 natsu:
   storage-root: ${NATSU_STORAGE_ROOT:./storage}
