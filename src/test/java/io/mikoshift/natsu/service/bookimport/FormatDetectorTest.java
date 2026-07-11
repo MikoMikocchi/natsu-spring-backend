@@ -3,18 +3,27 @@ package io.mikoshift.natsu.service.bookimport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mikoshift.natsu.config.NatsuProperties;
 import io.mikoshift.natsu.entity.Document.SourceFormat;
+import io.mikoshift.natsu.util.ZipUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class FormatDetectorTest {
 
-    private final FormatDetector detector = new FormatDetector();
+    private FormatDetector detector;
+
+    @BeforeEach
+    void setUp() {
+        detector = new FormatDetector(testProperties());
+    }
 
     @Test
     void detectsEpubByContainerXmlEntryRegardlessOfExtension() {
@@ -71,5 +80,20 @@ class FormatDetectorTest {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private static NatsuProperties testProperties() {
+        NatsuProperties.RateLimit.Bucket bucket = new NatsuProperties.RateLimit.Bucket(5, 60);
+        NatsuProperties.RateLimit rateLimit =
+                new NatsuProperties.RateLimit(bucket, bucket, bucket, bucket, bucket, bucket);
+        return new NatsuProperties(
+                "/tmp/natsu-test",
+                52_428_800L,
+                524_288_000L,
+                List.of("*"),
+                rateLimit,
+                "http://localhost:3000/reset-password?token={token}",
+                "noreply@example.com",
+                new NatsuProperties.BookImportRecovery(true, 15, 5, 3));
     }
 }

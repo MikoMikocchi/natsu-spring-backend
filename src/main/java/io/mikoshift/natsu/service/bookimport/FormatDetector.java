@@ -1,11 +1,14 @@
 package io.mikoshift.natsu.service.bookimport;
 
+import io.mikoshift.natsu.config.NatsuProperties;
 import io.mikoshift.natsu.entity.Document.SourceFormat;
+import io.mikoshift.natsu.util.ZipExpansionLimitExceededException;
 import io.mikoshift.natsu.util.ZipUtils;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,7 +17,10 @@ import org.springframework.stereotype.Component;
  * reliable magic bytes of their own (Markdown, plain text) fall back to the filename extension.
  */
 @Component
+@RequiredArgsConstructor
 public class FormatDetector {
+
+    private final NatsuProperties properties;
 
     private static final byte[] ZIP_MAGIC = {0x50, 0x4B, 0x03, 0x04};
     private static final byte[] RTF_MAGIC = "{\\rtf".getBytes(StandardCharsets.US_ASCII);
@@ -57,11 +63,17 @@ public class FormatDetector {
         return dot > 0 ? base.substring(0, dot) : base;
     }
 
-    private static SourceFormat detectZipFormat(byte[] content, String extension, String filename) {
+    private SourceFormat detectZipFormat(byte[] content, String extension, String filename) {
         Map<String, byte[]> entries;
         try {
-            entries = ZipUtils.readEntries(content);
+            entries = ZipUtils.readEntries(
+                    content,
+                    properties.maxZipDecompressedBytesPerEntry(),
+                    properties.maxZipDecompressedBytesTotal());
         } catch (UncheckedIOException e) {
+            if (e.getCause() instanceof ZipExpansionLimitExceededException) {
+                throw new ImportException("File decompresses to too much data: " + filename, e);
+            }
             throw new ImportException("File looks like a zip archive but could not be read: " + filename);
         }
         if (entries.containsKey("META-INF/container.xml") || entries.containsKey("mimetype")) {

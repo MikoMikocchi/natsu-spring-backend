@@ -3,18 +3,37 @@ package io.mikoshift.natsu.service.bookimport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mikoshift.natsu.config.NatsuProperties;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class EpubImporterTest {
 
-    private final EpubImporter importer = new EpubImporter();
+    private EpubImporter importer;
+
+    @BeforeEach
+    void setUp() {
+        NatsuProperties.RateLimit.Bucket bucket = new NatsuProperties.RateLimit.Bucket(5, 60);
+        NatsuProperties.RateLimit rateLimit =
+                new NatsuProperties.RateLimit(bucket, bucket, bucket, bucket, bucket, bucket);
+        importer = new EpubImporter(new NatsuProperties(
+                "/tmp/natsu-test",
+                52_428_800L,
+                524_288_000L,
+                List.of("*"),
+                rateLimit,
+                "http://localhost:3000/reset-password?token={token}",
+                "noreply@example.com",
+                new NatsuProperties.BookImportRecovery(true, 15, 5, 3)));
+    }
 
     @Test
     void parsesTitleAndSpineOrderedChapters() {

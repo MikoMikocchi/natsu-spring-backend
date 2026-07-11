@@ -41,7 +41,7 @@ server:
 
 natsu:
   storage-root: ${NATSU_STORAGE_ROOT:./storage}
-  max-package-bytes: 52428800     # 50 MB
+  max-package-bytes: 52428800     # 50 MB; zip decompression caps are 2×/4× this (see NatsuProperties)
   max-storage-bytes-per-user: 524288000   # 500 MB
   # Native Android clients don't send an Origin header, so CORS is mostly moot for them; kept
   # permissive and toggleable in case a browser-based tool or a future web client needs it.

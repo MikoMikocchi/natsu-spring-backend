@@ -19,6 +19,22 @@ public record NatsuProperties(
         String mailFrom,
         BookImportRecovery bookImportRecovery) {
 
+    /** Per-entry decompressed cap as a multiple of {@link #maxPackageBytes()}. */
+    public static final int ZIP_DECOMPRESSED_RATIO_PER_ENTRY = 2;
+
+    /** Total decompressed cap across all entries as a multiple of {@link #maxPackageBytes()}. */
+    public static final int ZIP_DECOMPRESSED_RATIO_TOTAL = 4;
+
+    /** Max decompressed bytes for a single zip entry ({@value #ZIP_DECOMPRESSED_RATIO_PER_ENTRY}× package limit). */
+    public long maxZipDecompressedBytesPerEntry() {
+        return maxPackageBytes * ZIP_DECOMPRESSED_RATIO_PER_ENTRY;
+    }
+
+    /** Max decompressed bytes for the whole archive ({@value #ZIP_DECOMPRESSED_RATIO_TOTAL}× package limit). */
+    public long maxZipDecompressedBytesTotal() {
+        return maxPackageBytes * ZIP_DECOMPRESSED_RATIO_TOTAL;
+    }
+
     /**
      * Per-endpoint, per-dimension throttle settings. Each bucket is independent -- e.g. login has its
      * own per-IP bucket AND its own per-email bucket, mirroring the two independent Rack::Attack

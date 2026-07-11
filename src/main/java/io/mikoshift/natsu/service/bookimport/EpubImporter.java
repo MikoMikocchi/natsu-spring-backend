@@ -1,9 +1,11 @@
 package io.mikoshift.natsu.service.bookimport;
 
+import io.mikoshift.natsu.config.NatsuProperties;
 import io.mikoshift.natsu.entity.Document.SourceFormat;
 import io.mikoshift.natsu.service.bookimport.InlineObject.InlineObjectType;
 import io.mikoshift.natsu.service.bookimport.Mark.MarkType;
 import io.mikoshift.natsu.util.HashUtils;
+import io.mikoshift.natsu.util.ZipExpansionLimitExceededException;
 import io.mikoshift.natsu.util.ZipUtils;
 import java.io.UncheckedIOException;
 import java.net.URLDecoder;
@@ -34,6 +36,12 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class EpubImporter implements BookImporter {
+
+    private final NatsuProperties properties;
+
+    public EpubImporter(NatsuProperties properties) {
+        this.properties = properties;
+    }
 
     @Override
     public SourceFormat supportedFormat() {
@@ -105,11 +113,17 @@ public class EpubImporter implements BookImporter {
 
     // ---------------------------------------------------------------- zip / opf plumbing
 
-    private static Map<String, byte[]> readZipEntries(byte[] sourceBytes) {
+    private Map<String, byte[]> readZipEntries(byte[] sourceBytes) {
         Map<String, byte[]> entries;
         try {
-            entries = ZipUtils.readEntries(sourceBytes);
+            entries = ZipUtils.readEntries(
+                    sourceBytes,
+                    properties.maxZipDecompressedBytesPerEntry(),
+                    properties.maxZipDecompressedBytesTotal());
         } catch (UncheckedIOException e) {
+            if (e.getCause() instanceof ZipExpansionLimitExceededException) {
+                throw new ImportException("EPUB decompresses to too much data", e);
+            }
             throw new ImportException("EPUB is not a valid zip archive", e);
         }
         if (entries.isEmpty()) {
