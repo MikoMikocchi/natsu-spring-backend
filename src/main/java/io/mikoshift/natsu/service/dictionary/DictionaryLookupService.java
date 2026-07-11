@@ -8,6 +8,7 @@ import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.repository.DictionaryTermRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,9 +43,17 @@ public class DictionaryLookupService {
     public List<DictionaryLookupResultResponse> lookup(User user, String query) {
         Set<UUID> disabledDictionaryIds = dictionaryEnablementService.disabledDictionaryIds(user);
 
+        List<Candidate> candidates = buildCandidates(query);
+        if (candidates.isEmpty()) {
+            return List.of();
+        }
+        List<String> words = candidates.stream().map(Candidate::word).toList();
+        Map<String, List<DictionaryTerm>> termsByWord =
+                indexTermsByWord(words, dictionaryTermRepository.findByWords(words));
+
         Map<String, GroupedResult> grouped = new LinkedHashMap<>();
-        for (Candidate candidate : buildCandidates(query)) {
-            for (DictionaryTerm term : dictionaryTermRepository.findByWord(candidate.word())) {
+        for (Candidate candidate : candidates) {
+            for (DictionaryTerm term : termsByWord.getOrDefault(candidate.word(), List.of())) {
                 if (disabledDictionaryIds.contains(term.getDictionary().getId())) {
                     continue;
                 }
@@ -66,6 +75,25 @@ public class DictionaryLookupService {
                 .limit(MAX_RESULTS)
                 .map(GroupedResult::toResponse)
                 .toList();
+    }
+
+    private static Map<String, List<DictionaryTerm>> indexTermsByWord(
+            List<String> words, List<DictionaryTerm> terms) {
+        Set<String> wordSet = Set.copyOf(words);
+        Map<String, List<DictionaryTerm>> termsByWord = new HashMap<>();
+        for (DictionaryTerm term : terms) {
+            if (wordSet.contains(term.getExpression())) {
+                termsByWord
+                        .computeIfAbsent(term.getExpression(), ignored -> new ArrayList<>())
+                        .add(term);
+            }
+            if (wordSet.contains(term.getReading()) && !term.getReading().equals(term.getExpression())) {
+                termsByWord
+                        .computeIfAbsent(term.getReading(), ignored -> new ArrayList<>())
+                        .add(term);
+            }
+        }
+        return termsByWord;
     }
 
     private List<Candidate> buildCandidates(String query) {
