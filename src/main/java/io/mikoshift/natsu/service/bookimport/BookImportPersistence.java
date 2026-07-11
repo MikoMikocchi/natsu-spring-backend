@@ -37,29 +37,34 @@ class BookImportPersistence {
 
     @Transactional
     void applySuccess(UUID documentId, String title, int charCount, String searchText, StoredPackage stored) {
-        documentRepository.findById(documentId).ifPresent(document -> {
-            try {
-                storageQuotaService.checkUserQuota(
-                        document.getUser(), stored.sizeBytes(), document.getPackageSizeBytes());
-            } catch (QuotaExceededException e) {
-                packageStorageService.delete(documentId);
-                document.setStatus(Document.Status.FAILED);
-                document.setImportError(e.getMessage());
-                document.setUpdatedAtMs(Instant.now().toEpochMilli());
-                return;
-            }
+        Document document = documentRepository.findById(documentId).orElse(null);
+        if (document == null) {
+            // User may have deleted the document while import was still running on the executor.
+            packageStorageService.delete(documentId);
+            return;
+        }
 
-            long nowMs = Instant.now().toEpochMilli();
-            document.setTitle(title);
-            document.setCharCount(charCount);
-            document.setPackageSizeBytes(stored.sizeBytes());
-            document.setPackageSha256(stored.sha256());
-            document.setPackageUpdatedAtMs(nowMs);
-            document.setUpdatedAtMs(nowMs);
-            document.setStatus(Document.Status.READY);
-            document.setImportError(null);
-            documentSearchTextRepository.save(new DocumentSearchText(documentId, searchText));
-        });
+        try {
+            storageQuotaService.checkUserQuota(
+                    document.getUser(), stored.sizeBytes(), document.getPackageSizeBytes());
+        } catch (QuotaExceededException e) {
+            packageStorageService.delete(documentId);
+            document.setStatus(Document.Status.FAILED);
+            document.setImportError(e.getMessage());
+            document.setUpdatedAtMs(Instant.now().toEpochMilli());
+            return;
+        }
+
+        long nowMs = Instant.now().toEpochMilli();
+        document.setTitle(title);
+        document.setCharCount(charCount);
+        document.setPackageSizeBytes(stored.sizeBytes());
+        document.setPackageSha256(stored.sha256());
+        document.setPackageUpdatedAtMs(nowMs);
+        document.setUpdatedAtMs(nowMs);
+        document.setStatus(Document.Status.READY);
+        document.setImportError(null);
+        documentSearchTextRepository.save(new DocumentSearchText(documentId, searchText));
     }
 
     @Transactional

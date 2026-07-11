@@ -18,7 +18,11 @@ import org.springframework.stereotype.Component;
  * ImportException}) is a permanent failure handled inline, with no retry. A storage I/O hiccup
  * ({@link TransientImportException}) is retried up to 3 times with exponential backoff; once
  * retries are exhausted, {@link #recover} marks the document failed the same way a permanent
- * failure would. The actual file parsing/zip-building work runs outside any DB transaction -- only
+ * failure would. Any other unexpected failure (e.g. a DB error after the package was already
+ * written) is caught inline, the stored package is deleted if present, and the document is marked
+ * failed -- without this, {@code @Async} would swallow the exception via the default uncaught
+ * handler and leave the document stuck in {@code PENDING}. The actual file parsing/zip-building work
+ * runs outside any DB transaction -- only
  * the short read-before and write-after steps (in {@link BookImportPersistence}) are transactional,
  * so a slow import never holds a pooled connection open.
  */
@@ -43,6 +47,7 @@ public class BookImportOrchestrator {
             return;
         }
 
+        boolean packageStored = false;
         try {
             BookImporter importer = importerRegistry.forFormat(document.getSourceFormat());
             ImportedBook book = importer.importFrom(sourceBytes);
@@ -51,10 +56,19 @@ public class BookImportOrchestrator {
             byte[] packageZip = packageBuilder.buildZip(title, document.getSourceFormat(), book);
 
             StoredPackage stored = store(documentId, packageZip);
+            packageStored = true;
             persistence.applySuccess(documentId, title, plainText.length(), plainText, stored);
         } catch (ImportException e) {
             log.warn("Import of document {} failed permanently: {}", documentId, e.getMessage());
             persistence.markFailed(documentId, e.getMessage());
+        } catch (TransientImportException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Import of document {} failed unexpectedly", documentId, e);
+            if (packageStored) {
+                deleteStoredPackage(documentId);
+            }
+            persistence.markFailed(documentId, "Import failed unexpectedly; please try uploading again.");
         }
     }
 
@@ -69,6 +83,14 @@ public class BookImportOrchestrator {
             return packageStorageService.store(documentId, packageZip);
         } catch (UncheckedIOException e) {
             throw new TransientImportException("Failed to write package for document " + documentId, e);
+        }
+    }
+
+    private void deleteStoredPackage(UUID documentId) {
+        try {
+            packageStorageService.delete(documentId);
+        } catch (RuntimeException e) {
+            log.warn("Failed to delete orphaned package for document {}", documentId, e);
         }
     }
 }
