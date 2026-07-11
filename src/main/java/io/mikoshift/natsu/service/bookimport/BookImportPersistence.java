@@ -2,8 +2,11 @@ package io.mikoshift.natsu.service.bookimport;
 
 import io.mikoshift.natsu.entity.Document;
 import io.mikoshift.natsu.entity.DocumentSearchText;
+import io.mikoshift.natsu.exception.QuotaExceededException;
 import io.mikoshift.natsu.repository.DocumentRepository;
 import io.mikoshift.natsu.repository.DocumentSearchTextRepository;
+import io.mikoshift.natsu.service.documents.StorageQuotaService;
+import io.mikoshift.natsu.service.storage.PackageStorageService;
 import io.mikoshift.natsu.service.storage.StoredPackage;
 import java.time.Instant;
 import java.util.UUID;
@@ -23,6 +26,8 @@ class BookImportPersistence {
 
     private final DocumentRepository documentRepository;
     private final DocumentSearchTextRepository documentSearchTextRepository;
+    private final StorageQuotaService storageQuotaService;
+    private final PackageStorageService packageStorageService;
 
     @Transactional(readOnly = true)
     Document findPending(UUID documentId) {
@@ -33,6 +38,17 @@ class BookImportPersistence {
     @Transactional
     void applySuccess(UUID documentId, String title, int charCount, String searchText, StoredPackage stored) {
         documentRepository.findById(documentId).ifPresent(document -> {
+            try {
+                storageQuotaService.checkUserQuota(
+                        document.getUser(), stored.sizeBytes(), document.getPackageSizeBytes());
+            } catch (QuotaExceededException e) {
+                packageStorageService.delete(documentId);
+                document.setStatus(Document.Status.FAILED);
+                document.setImportError(e.getMessage());
+                document.setUpdatedAtMs(Instant.now().toEpochMilli());
+                return;
+            }
+
             long nowMs = Instant.now().toEpochMilli();
             document.setTitle(title);
             document.setCharCount(charCount);

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +56,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("errors", Map.of("base", List.of("Forbidden"))));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        if (isStorageQuotaExceeded(ex)) {
+            return handleApiException(new QuotaExceededException("Storage quota exceeded"));
+        }
+        throw ex;
+    }
+
+    private static boolean isStorageQuotaExceeded(Throwable ex) {
+        for (Throwable current = ex; current != null; current = current.getCause()) {
+            String message = current.getMessage();
+            if (message != null && message.contains("storage_quota_exceeded")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String toSnakeCase(String camelCase) {

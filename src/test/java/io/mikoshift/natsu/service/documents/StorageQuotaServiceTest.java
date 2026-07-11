@@ -9,7 +9,9 @@ import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.QuotaExceededException;
 import io.mikoshift.natsu.exception.ValidationException;
 import io.mikoshift.natsu.repository.DocumentRepository;
+import io.mikoshift.natsu.repository.UserRepository;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +27,9 @@ class StorageQuotaServiceTest {
     @Mock
     private DocumentRepository documentRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private StorageQuotaService quotaService;
     private User user;
 
@@ -35,6 +40,7 @@ class StorageQuotaServiceTest {
                 new NatsuProperties.RateLimit(bucket, bucket, bucket, bucket, bucket, bucket);
         quotaService = new StorageQuotaService(
                 documentRepository,
+                userRepository,
                 new NatsuProperties(
                         "/tmp/natsu-test",
                         MAX_PACKAGE_BYTES,
@@ -45,6 +51,7 @@ class StorageQuotaServiceTest {
                         "noreply@example.com",
                         new NatsuProperties.BookImportRecovery(true, 15, 5, 3)));
         user = new User();
+        user.setId(1L);
     }
 
     @Test
@@ -60,6 +67,7 @@ class StorageQuotaServiceTest {
 
     @Test
     void rejectsWhenTotalUsageWouldExceedThePerUserQuota() {
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
         when(documentRepository.sumPackageSizeBytesByUser(user)).thenReturn(4500L);
 
         assertThatThrownBy(() -> quotaService.checkUserQuota(user, 600, 0)).isInstanceOf(QuotaExceededException.class);
@@ -67,6 +75,7 @@ class StorageQuotaServiceTest {
 
     @Test
     void excludesTheReplacedDocumentsCurrentSizeFromTheUsageTotal() {
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
         // 4500 already used, of which 400 belongs to the document being replaced; replacing it
         // with a 600-byte package brings usage to 4500 - 400 + 600 = 4700, under the 5000 cap.
         when(documentRepository.sumPackageSizeBytesByUser(user)).thenReturn(4500L);
