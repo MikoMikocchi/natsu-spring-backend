@@ -110,7 +110,10 @@ public class Document {
     public enum SourceFormat {
         EPUB,
         MARKDOWN,
-        PLAIN_TEXT
+        PLAIN_TEXT,
+        FB2,
+        DOCX,
+        RTF
     }
 
     public enum Status {

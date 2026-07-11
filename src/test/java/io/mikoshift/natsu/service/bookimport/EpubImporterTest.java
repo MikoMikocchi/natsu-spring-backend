@@ -27,11 +27,32 @@ class EpubImporterTest {
         ImportedBook book = importer.importFrom(epub);
 
         assertThat(book.title()).isEqualTo("My Test Book");
+        assertThat(book.authors()).containsExactly("Jane Author");
         assertThat(book.sections()).hasSize(2);
         assertThat(book.sections().get(0).title()).isEqualTo("Chapter One");
-        assertThat(book.sections().get(0).html()).contains("Hello world.");
+        assertThat(paragraphText(book.sections().get(0))).isEqualTo("Hello world.");
         assertThat(book.sections().get(1).title()).isEqualTo("Chapter Two");
-        assertThat(book.sections().get(1).html()).contains("Second chapter content.");
+        assertThat(paragraphText(book.sections().get(1))).isEqualTo("Second chapter content.");
+    }
+
+    @Test
+    void extractsBoldAndItalicMarks() {
+        byte[] epub = buildEpub(Map.of(
+                "META-INF/container.xml", containerXml("OEBPS/content.opf"),
+                "OEBPS/content.opf", opfXml(),
+                "OEBPS/chapter1.xhtml",
+                        chapterXhtmlRaw("Chapter One", "<p>Some <strong>bold</strong> and <em>italic</em> text.</p>")));
+
+        ImportedBook book = importer.importFrom(epub);
+
+        ParagraphBlock paragraph = (ParagraphBlock) book.sections().get(0).blocks().stream()
+                .filter(ParagraphBlock.class::isInstance)
+                .findFirst()
+                .orElseThrow();
+        assertThat(paragraph.text()).isEqualTo("Some bold and italic text.");
+        assertThat(paragraph.marks())
+                .extracting(Mark::type)
+                .containsExactlyInAnyOrder(Mark.MarkType.BOLD, Mark.MarkType.ITALIC);
     }
 
     @Test
@@ -45,6 +66,14 @@ class EpubImporterTest {
     void rejectsNonZipInput() {
         assertThatThrownBy(() -> importer.importFrom("not a zip".getBytes(StandardCharsets.UTF_8)))
                 .isInstanceOf(ImportException.class);
+    }
+
+    private static String paragraphText(ImportedSection section) {
+        return section.blocks().stream()
+                .filter(ParagraphBlock.class::isInstance)
+                .map(b -> ((ParagraphBlock) b).text())
+                .findFirst()
+                .orElseThrow();
     }
 
     private static String containerXml(String opfPath) {
@@ -64,6 +93,7 @@ class EpubImporterTest {
                 <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
                   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
                     <dc:title>My Test Book</dc:title>
+                    <dc:creator>Jane Author</dc:creator>
                   </metadata>
                   <manifest>
                     <item id="ch1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
@@ -78,13 +108,17 @@ class EpubImporterTest {
     }
 
     private static String chapterXhtml(String heading, String paragraph) {
+        return chapterXhtmlRaw(heading, "<p>%s</p>".formatted(paragraph));
+    }
+
+    private static String chapterXhtmlRaw(String heading, String bodyExtra) {
         return """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <html xmlns="http://www.w3.org/1999/xhtml">
                 <head><title>%s</title></head>
-                <body><h1>%s</h1><p>%s</p></body>
+                <body><h1>%s</h1>%s</body>
                 </html>
-                """.formatted(heading, heading, paragraph);
+                """.formatted(heading, heading, bodyExtra);
     }
 
     private static byte[] buildEpub(Map<String, String> entries) {

@@ -3,12 +3,11 @@ package io.mikoshift.natsu.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 
 import com.jayway.jsonpath.JsonPath;
 import io.mikoshift.natsu.TestcontainersConfiguration;
@@ -247,15 +246,13 @@ class AuthFlowIntegrationTest {
         mockMvc.perform(post("/v1/documents/sync")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                """
+                        .content("""
                                 {"documents":[{
                                   "id":"%s","title":"Locally Imported","source_format":"PLAIN_TEXT","imported_at":1000,
                                   "char_count":10,"last_read_char_offset":0,"last_read_block_index":0,
                                   "last_read_block_char_offset":0,"updated_at_ms":1000,"deleted":false
                                 }]}
-                                """
-                                        .formatted(documentId)))
+                                """.formatted(documentId)))
                 .andExpect(status().isOk());
 
         byte[] zip = buildZip("manifest.json");

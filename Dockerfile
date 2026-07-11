@@ -53,6 +53,12 @@ RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination 
 
 FROM eclipse-temurin:26-jre AS final
 
+# Pandoc powers DOCX/RTF import (PandocBridgeImporter shells out to the `pandoc` CLI to convert
+# to EPUB before handing off to EpubImporter). Installed from the base image's own apt repos
+# rather than pinning a specific Pandoc version -- docx/rtf->epub conversion has been stable
+# across Pandoc releases for years, so whatever Debian ships alongside this Temurin base is fine.
+RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -rf /var/lib/apt/lists/*
+
 # Dedicated non-root user to run the app -- standard container hardening,
 # avoids running application code as root inside the container. UID/GID
 # 10001 is used instead of 1000 because the eclipse-temurin base image

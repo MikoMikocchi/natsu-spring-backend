@@ -2,9 +2,9 @@ package io.mikoshift.natsu.service.bookimport;
 
 import io.mikoshift.natsu.entity.Document.SourceFormat;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.HtmlUtils;
 
 @Component
 public class PlainTextImporter implements BookImporter {
@@ -21,16 +21,17 @@ public class PlainTextImporter implements BookImporter {
             throw new ImportException("Plain text file is empty");
         }
 
-        StringBuilder html = new StringBuilder();
+        List<Block> blocks = new ArrayList<>();
+        int index = 0;
         for (String paragraph : text.split("\\r?\\n\\s*\\r?\\n")) {
             String trimmed = paragraph.strip();
             if (!trimmed.isEmpty()) {
-                html.append("<p>")
-                        .append(HtmlUtils.htmlEscape(trimmed).replace("\n", "<br/>"))
-                        .append("</p>\n");
+                blocks.add(new ParagraphBlock("section-0-b" + index, trimmed, List.of(), List.of()));
+                index++;
             }
         }
+        ImportedSection section = new ImportedSection("section-0", null, blocks);
 
-        return new ImportedBook(null, List.of(new ImportedSection("section-0", null, html.toString())));
+        return ImportedBook.of(null, List.of(section));
     }
 }

@@ -1,13 +1,11 @@
 package io.mikoshift.natsu.service.storage;
 
 import io.mikoshift.natsu.config.NatsuProperties;
+import io.mikoshift.natsu.util.HashUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.FileSystemResource;
@@ -26,7 +24,7 @@ public class LocalDiskPackageStorageService implements PackageStorageService {
             Path path = packagePath(documentId);
             Files.createDirectories(path.getParent());
             Files.write(path, content);
-            return new StoredPackage(content.length, sha256Hex(content));
+            return new StoredPackage(content.length, HashUtils.sha256Hex(content));
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to store package for document " + documentId, e);
         }
@@ -53,14 +51,5 @@ public class LocalDiskPackageStorageService implements PackageStorageService {
 
     private Path packagePath(UUID documentId) {
         return Path.of(properties.storageRoot(), "packages", documentId + ".zip");
-    }
-
-    private static String sha256Hex(byte[] content) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(content);
-            return HexFormat.of().formatHex(digest);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

@@ -36,14 +36,15 @@ public class DocumentImportService {
             throw ValidationException.of("file", "must not be empty");
         }
         storageQuotaService.checkUploadSize(file.getSize());
+        byte[] bytes = readBytes(file);
 
         SourceFormat format;
         try {
-            format = formatDetector.detect(file.getOriginalFilename());
+            format = formatDetector.detect(file.getOriginalFilename(), bytes);
         } catch (ImportException e) {
             // Detection happens synchronously against the request itself (unlike parsing, which
-            // runs async), so a bad filename should surface as a normal validation error here
-            // rather than reaching the client as an opaque 500.
+            // runs async), so a bad filename/content should surface as a normal validation error
+            // here rather than reaching the client as an opaque 500.
             throw ValidationException.of("file", e.getMessage());
         }
         String fallbackTitle = formatDetector.titleFromFilename(file.getOriginalFilename());
@@ -59,7 +60,7 @@ public class DocumentImportService {
         document.setUpdatedAtMs(now);
         document = documentRepository.save(document);
 
-        orchestrator.importAsync(document.getId(), readBytes(file), fallbackTitle);
+        orchestrator.importAsync(document.getId(), bytes, fallbackTitle);
         return document;
     }
 

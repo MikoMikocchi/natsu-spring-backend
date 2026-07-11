@@ -48,7 +48,7 @@ public class BookImportOrchestrator {
             ImportedBook book = importer.importFrom(sourceBytes);
             String title = book.title() != null && !book.title().isBlank() ? book.title() : fallbackTitle;
             String plainText = packageBuilder.extractPlainText(book.sections());
-            byte[] packageZip = packageBuilder.buildZip(title, document.getSourceFormat(), book.sections());
+            byte[] packageZip = packageBuilder.buildZip(title, document.getSourceFormat(), book);
 
             StoredPackage stored = store(documentId, packageZip);
             persistence.applySuccess(documentId, title, plainText.length(), plainText, stored);

@@ -1,4 +1,6 @@
 package io.mikoshift.natsu.service.bookimport;
 
-/** One chapter/section worth of HTML content, in reading order. */
-public record ImportedSection(String id, String title, String html) {}
+import java.util.List;
+
+/** One chapter/section worth of content, as an ordered list of blocks, in reading order. */
+public record ImportedSection(String id, String title, List<Block> blocks) {}

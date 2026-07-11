@@ -129,8 +129,8 @@ class BookImportIntegrationTest {
         Map<String, String> entries = readZip(packageBytes);
         assertThat(entries).containsKey("manifest.json");
         assertThat(entries.get("manifest.json")).contains("\"sections\"");
-        assertThat(entries).containsKey("sections/section-0.html");
-        assertThat(entries.get("sections/section-0.html")).contains("Today was good.");
+        assertThat(entries).containsKey("sections/section-0.json");
+        assertThat(entries.get("sections/section-0.json")).contains("Today was good.");
     }
 
     @Test

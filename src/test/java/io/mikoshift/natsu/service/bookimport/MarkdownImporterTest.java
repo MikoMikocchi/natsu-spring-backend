@@ -11,14 +11,21 @@ class MarkdownImporterTest {
     private final MarkdownImporter importer = new MarkdownImporter();
 
     @Test
-    void extractsTitleFromLeadingH1AndRendersHtml() {
+    void extractsTitleFromLeadingH1AndEmitsBlocks() {
         byte[] bytes = "# My Book\n\nSome *emphasised* text.".getBytes(StandardCharsets.UTF_8);
 
         ImportedBook book = importer.importFrom(bytes);
 
         assertThat(book.title()).isEqualTo("My Book");
         assertThat(book.sections()).hasSize(1);
-        assertThat(book.sections().get(0).html()).contains("<em>emphasised</em>");
+        var blocks = book.sections().get(0).blocks();
+        assertThat(blocks).hasSize(2);
+        assertThat(blocks.get(0)).isInstanceOf(HeadingBlock.class);
+        assertThat(((HeadingBlock) blocks.get(0)).text()).isEqualTo("My Book");
+
+        ParagraphBlock paragraph = (ParagraphBlock) blocks.get(1);
+        assertThat(paragraph.text()).isEqualTo("Some emphasised text.");
+        assertThat(paragraph.marks()).containsExactly(new Mark(Mark.MarkType.ITALIC, 5, 15));
     }
 
     @Test
