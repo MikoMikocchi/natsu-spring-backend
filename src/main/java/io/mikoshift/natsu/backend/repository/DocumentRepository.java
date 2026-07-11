@@ -34,4 +34,7 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
 
     @Query("select coalesce(sum(d.packageSizeBytes), 0) from Document d where d.user = :user and d.deletedAt is null")
     long sumPackageSizeBytesByUser(@Param("user") User user);
+
+    @Query("select d.id from Document d where d.user = :user")
+    List<UUID> findIdsByUser(@Param("user") User user);
 }

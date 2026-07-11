@@ -8,15 +8,29 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+
 import com.jayway.jsonpath.JsonPath;
 import io.mikoshift.natsu.backend.TestcontainersConfiguration;
+import io.mikoshift.natsu.backend.config.NatsuProperties;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -40,6 +54,20 @@ class AuthFlowIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private NatsuProperties natsuProperties;
+
+    @DynamicPropertySource
+    static void storageRoot(DynamicPropertyRegistry registry) {
+        registry.add("natsu.storage-root", () -> {
+            try {
+                return Files.createTempDirectory("natsu-test-storage").toString();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
 
     @Test
     void registerLoginUseTokenListSessionsRevokeRefreshLogout() throws Exception {
@@ -200,6 +228,67 @@ class AuthFlowIntegrationTest {
 
         mockMvc.perform(get("/v1/auth/user").header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deletingAccountAlsoRemovesPackageFilesFromDisk() throws Exception {
+        String response = mockMvc.perform(post("/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Purge","email":"purge-me@example.com","password":"password123","password_confirmation":"password123"}
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String token = JsonPath.read(response, "$.token");
+
+        String documentId = UUID.randomUUID().toString();
+        mockMvc.perform(post("/v1/documents/sync")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(
+                                """
+                                {"documents":[{
+                                  "id":"%s","title":"Locally Imported","source_format":"PLAIN_TEXT","imported_at":1000,
+                                  "char_count":10,"last_read_char_offset":0,"last_read_block_index":0,
+                                  "last_read_block_char_offset":0,"updated_at_ms":1000,"deleted":false
+                                }]}
+                                """
+                                        .formatted(documentId)))
+                .andExpect(status().isOk());
+
+        byte[] zip = buildZip("manifest.json");
+        MockMultipartFile packageFile = new MockMultipartFile("package", "package.zip", "application/zip", zip);
+        mockMvc.perform(multipart(HttpMethod.PUT, "/v1/documents/" + documentId + "/package")
+                        .file(packageFile)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        Path packagePath = Path.of(natsuProperties.storageRoot(), "packages", documentId + ".zip");
+        assertThat(Files.exists(packagePath)).isTrue();
+
+        mockMvc.perform(delete("/v1/auth/account")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"password":"password123"}
+                                """))
+                .andExpect(status().isNoContent());
+
+        assertThat(Files.exists(packagePath)).isFalse();
+    }
+
+    private static byte[] buildZip(String... entryNames) throws IOException {
+        java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(bytes)) {
+            for (String entryName : entryNames) {
+                zip.putNextEntry(new ZipEntry(entryName));
+                zip.write("content".getBytes());
+                zip.closeEntry();
+            }
+        }
+        return bytes.toByteArray();
     }
 
     @Test
