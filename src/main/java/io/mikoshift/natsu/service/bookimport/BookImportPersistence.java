@@ -1,7 +1,9 @@
 package io.mikoshift.natsu.service.bookimport;
 
 import io.mikoshift.natsu.entity.Document;
+import io.mikoshift.natsu.entity.DocumentSearchText;
 import io.mikoshift.natsu.repository.DocumentRepository;
+import io.mikoshift.natsu.repository.DocumentSearchTextRepository;
 import io.mikoshift.natsu.service.storage.StoredPackage;
 import java.time.Instant;
 import java.util.UUID;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 class BookImportPersistence {
 
     private final DocumentRepository documentRepository;
+    private final DocumentSearchTextRepository documentSearchTextRepository;
 
     @Transactional(readOnly = true)
     Document findPending(UUID documentId) {
@@ -33,13 +36,13 @@ class BookImportPersistence {
             long nowMs = Instant.now().toEpochMilli();
             document.setTitle(title);
             document.setCharCount(charCount);
-            document.setSearchText(searchText);
             document.setPackageSizeBytes(stored.sizeBytes());
             document.setPackageSha256(stored.sha256());
             document.setPackageUpdatedAtMs(nowMs);
             document.setUpdatedAtMs(nowMs);
             document.setStatus(Document.Status.READY);
             document.setImportError(null);
+            documentSearchTextRepository.save(new DocumentSearchText(documentId, searchText));
         });
     }
 

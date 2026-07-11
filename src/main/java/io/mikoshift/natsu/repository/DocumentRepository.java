@@ -24,13 +24,19 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
 
     /**
      * Matches against title and/or the extracted body text populated once a package has been
-     * processed.
+     * processed. The body text lives in {@code document_search_text}, a separate table (see
+     * {@link io.mikoshift.natsu.entity.DocumentSearchText}) so that it never rides along with
+     * ordinary document reads -- only this query touches it, via an explicit left join since the
+     * two entities aren't otherwise associated. Left (not inner) so documents that haven't
+     * finished importing yet -- and so have no search-text row -- still match on title.
      */
-    @Query("select d from Document d where d.user = :user and d.deletedAt is null "
+    @Query("select new io.mikoshift.natsu.repository.DocumentSearchRow(d.id, d.title, st.searchText) "
+            + "from Document d left join DocumentSearchText st on st.documentId = d.id "
+            + "where d.user = :user and d.deletedAt is null "
             + "and (lower(d.title) like lower(concat('%', :query, '%')) "
-            + "or lower(d.searchText) like lower(concat('%', :query, '%'))) "
+            + "or lower(st.searchText) like lower(concat('%', :query, '%'))) "
             + "order by d.updatedAtMs desc")
-    List<Document> searchByUserAndQuery(@Param("user") User user, @Param("query") String query);
+    List<DocumentSearchRow> searchByUserAndQuery(@Param("user") User user, @Param("query") String query);
 
     @Query("select coalesce(sum(d.packageSizeBytes), 0) from Document d where d.user = :user and d.deletedAt is null")
     long sumPackageSizeBytesByUser(@Param("user") User user);

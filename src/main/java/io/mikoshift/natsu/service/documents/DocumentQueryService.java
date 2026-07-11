@@ -6,6 +6,7 @@ import io.mikoshift.natsu.entity.Document;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.NotFoundException;
 import io.mikoshift.natsu.repository.DocumentRepository;
+import io.mikoshift.natsu.repository.DocumentSearchRow;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -39,13 +40,12 @@ public class DocumentQueryService {
     @Transactional(readOnly = true)
     public List<DocumentSearchResult> search(User user, String query) {
         return documentRepository.searchByUserAndQuery(user, query).stream()
-                .map(document -> buildSearchResult(document, query))
+                .map(row -> buildSearchResult(row, query))
                 .toList();
     }
 
-    private DocumentSearchResult buildSearchResult(Document document, String query) {
-        String haystack =
-                document.getTitle() + "\n" + (document.getSearchText() != null ? document.getSearchText() : "");
+    private DocumentSearchResult buildSearchResult(DocumentSearchRow row, String query) {
+        String haystack = row.title() + "\n" + (row.searchText() != null ? row.searchText() : "");
         String lowerHaystack = haystack.toLowerCase();
         String lowerQuery = query.toLowerCase();
 
@@ -61,6 +61,6 @@ public class DocumentQueryService {
             matches.add(new DocumentSearchMatch(index, haystack.substring(start, end)));
             from = index + lowerQuery.length();
         }
-        return new DocumentSearchResult(document.getId(), document.getTitle(), matches);
+        return new DocumentSearchResult(row.id(), row.title(), matches);
     }
 }

@@ -92,10 +92,6 @@ public class Document {
     @Column(name = "package_sha256", length = 64)
     private String packageSha256;
 
-    /** Extracted plain-text body, populated once package processing exists; null until then. */
-    @Column(name = "search_text")
-    private String searchText;
-
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
