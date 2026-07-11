@@ -34,7 +34,6 @@ docker-compose.yml
 # CI / misc project tooling not needed inside the build context
 .github/
 HELP.md
-dependency-check-suppressions.xml
 
 # This agent's scratch notes, not part of the app
 .clawdea/
