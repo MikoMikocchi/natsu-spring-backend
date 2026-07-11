@@ -72,8 +72,8 @@ public abstract class PandocBridgeImporter implements BookImporter {
     }
 
     private void runPandoc(Path input, Path output) {
-        List<String> command = List.of(
-                "pandoc", "--sandbox", "--standalone", input.toString(), "-o", output.toString());
+        List<String> command =
+                List.of("pandoc", "--sandbox", "--standalone", input.toString(), "-o", output.toString());
         pandocRunner.run(command, timeout, labelUpper());
     }
 

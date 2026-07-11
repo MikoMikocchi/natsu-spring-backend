@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mikoshift.natsu.config.NatsuProperties;
 import io.mikoshift.natsu.entity.Document.SourceFormat;
-import io.mikoshift.natsu.util.ZipUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;

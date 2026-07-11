@@ -35,8 +35,7 @@ public final class ZipUtils {
      * @throws UncheckedIOException if the bytes aren't a readable zip archive or limits are exceeded.
      */
     public static Map<String, byte[]> readEntries(byte[] zipBytes) {
-        return readEntries(
-                zipBytes, DEFAULT_MAX_DECOMPRESSED_BYTES_PER_ENTRY, DEFAULT_MAX_DECOMPRESSED_BYTES_TOTAL);
+        return readEntries(zipBytes, DEFAULT_MAX_DECOMPRESSED_BYTES_PER_ENTRY, DEFAULT_MAX_DECOMPRESSED_BYTES_TOTAL);
     }
 
     /**
@@ -82,19 +81,16 @@ public final class ZipUtils {
         while ((read = zip.read(buffer)) != -1) {
             entryDecompressed += read;
             if (entryDecompressed > maxDecompressedBytesPerEntry) {
-                throw new ZipExpansionLimitExceededException(
-                        "Zip entry '"
-                                + entryName
-                                + "' exceeds decompressed size limit of "
-                                + maxDecompressedBytesPerEntry
-                                + " bytes");
+                throw new ZipExpansionLimitExceededException("Zip entry '"
+                        + entryName
+                        + "' exceeds decompressed size limit of "
+                        + maxDecompressedBytesPerEntry
+                        + " bytes");
             }
             long totalDecompressed = totalDecompressedBeforeEntry + entryDecompressed;
             if (totalDecompressed > maxDecompressedBytesTotal) {
                 throw new ZipExpansionLimitExceededException(
-                        "Zip archive exceeds total decompressed size limit of "
-                                + maxDecompressedBytesTotal
-                                + " bytes");
+                        "Zip archive exceeds total decompressed size limit of " + maxDecompressedBytesTotal + " bytes");
             }
             out.write(buffer, 0, read);
         }

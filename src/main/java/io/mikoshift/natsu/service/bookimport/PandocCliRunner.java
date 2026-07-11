@@ -27,8 +27,7 @@ final class PandocCliRunner {
             process = builder.start();
         } catch (IOException e) {
             throw new ImportException(
-                    "Pandoc is not available on this server; " + formatLabel + " import is currently unsupported",
-                    e);
+                    "Pandoc is not available on this server; " + formatLabel + " import is currently unsupported", e);
         }
 
         Future<String> outputFuture =
@@ -63,8 +62,7 @@ final class PandocCliRunner {
 
         if (process.exitValue() != 0) {
             log.warn("Pandoc conversion failed (exit {}): {}", process.exitValue(), processOutput);
-            throw new ImportException(
-                    "Could not convert " + formatLabel + " file: malformed or unsupported document");
+            throw new ImportException("Could not convert " + formatLabel + " file: malformed or unsupported document");
         }
     }
 }

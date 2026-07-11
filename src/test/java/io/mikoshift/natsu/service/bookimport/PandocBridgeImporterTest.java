@@ -121,13 +121,8 @@ class PandocBridgeImporterTest {
 
             assertThat(capturedCommands).hasSize(1);
             List<String> command = capturedCommands.getFirst();
-            assertThat(command).containsExactly(
-                    "pandoc",
-                    "--sandbox",
-                    "--standalone",
-                    command.get(3),
-                    "-o",
-                    command.get(5));
+            assertThat(command)
+                    .containsExactly("pandoc", "--sandbox", "--standalone", command.get(3), "-o", command.get(5));
             assertThat(command.get(3)).endsWith("input.docx");
             assertThat(command.get(5)).endsWith("output.epub");
         }
@@ -144,8 +139,7 @@ class PandocBridgeImporterTest {
                     },
                     Duration.ofSeconds(30));
 
-            assertThatThrownBy(() -> importer.importFrom(new byte[] {1, 2, 3}))
-                    .isInstanceOf(ImportException.class);
+            assertThatThrownBy(() -> importer.importFrom(new byte[] {1, 2, 3})).isInstanceOf(ImportException.class);
 
             assertThat(capturedLabel.get()).isEqualTo("RTF");
         }
@@ -169,10 +163,7 @@ class PandocBridgeImporterTest {
         @Test
         void rejectsWhenRunnerSucceedsButProducesNoOutputFile() {
             TestPandocImporter importer = new TestPandocImporter(
-                    epubImporter,
-                    "docx",
-                    (command, timeout, formatLabel) -> {},
-                    Duration.ofSeconds(30));
+                    epubImporter, "docx", (command, timeout, formatLabel) -> {}, Duration.ofSeconds(30));
 
             assertThatThrownBy(() -> importer.importFrom(new byte[] {1}))
                     .isInstanceOf(ImportException.class)
@@ -223,8 +214,7 @@ class PandocBridgeImporterTest {
     private static byte[] minimalEpub(String chapterTitle, String paragraph) {
         return buildEpub(Map.of(
                 "META-INF/container.xml", containerXml("OEBPS/content.opf"),
-                "OEBPS/content.opf",
-                        """
+                "OEBPS/content.opf", """
                         <?xml version="1.0"?>
                         <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
                           <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -238,15 +228,13 @@ class PandocBridgeImporterTest {
                           </spine>
                         </package>
                         """,
-                "OEBPS/chapter1.xhtml",
-                        """
+                "OEBPS/chapter1.xhtml", """
                         <?xml version="1.0" encoding="UTF-8"?>
                         <html xmlns="http://www.w3.org/1999/xhtml">
                         <head><title>%s</title></head>
                         <body><h1>%s</h1><p>%s</p></body>
                         </html>
-                        """
-                                .formatted(chapterTitle, chapterTitle, paragraph)));
+                        """.formatted(chapterTitle, chapterTitle, paragraph)));
     }
 
     private static String containerXml(String opfPath) {
@@ -280,11 +268,7 @@ class PandocBridgeImporterTest {
 
         private final String extension;
 
-        TestPandocImporter(
-                EpubImporter epubImporter,
-                String extension,
-                PandocRunner pandocRunner,
-                Duration timeout) {
+        TestPandocImporter(EpubImporter epubImporter, String extension, PandocRunner pandocRunner, Duration timeout) {
             super(epubImporter, pandocRunner, timeout);
             this.extension = extension;
         }

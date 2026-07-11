@@ -67,9 +67,7 @@ public class FormatDetector {
         Map<String, byte[]> entries;
         try {
             entries = ZipUtils.readEntries(
-                    content,
-                    properties.maxZipDecompressedBytesPerEntry(),
-                    properties.maxZipDecompressedBytesTotal());
+                    content, properties.maxZipDecompressedBytesPerEntry(), properties.maxZipDecompressedBytesTotal());
         } catch (UncheckedIOException e) {
             if (e.getCause() instanceof ZipExpansionLimitExceededException) {
                 throw new ImportException("File decompresses to too much data: " + filename, e);

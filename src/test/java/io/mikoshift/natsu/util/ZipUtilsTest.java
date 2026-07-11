@@ -27,15 +27,12 @@ class ZipUtilsTest {
         assertThatThrownBy(() -> ZipUtils.readEntries(zip, 32 * 1024, 1024 * 1024))
                 .isInstanceOf(UncheckedIOException.class)
                 .hasCauseInstanceOf(ZipExpansionLimitExceededException.class)
-                .hasRootCauseMessage(
-                        "Zip entry 'bomb.bin' exceeds decompressed size limit of 32768 bytes");
+                .hasRootCauseMessage("Zip entry 'bomb.bin' exceeds decompressed size limit of 32768 bytes");
     }
 
     @Test
     void rejectsArchiveThatExceedsTotalDecompressedLimit() {
-        byte[] zip = zipOfEntries(
-                entry("a.bin", new byte[24 * 1024]),
-                entry("b.bin", new byte[24 * 1024]));
+        byte[] zip = zipOfEntries(entry("a.bin", new byte[24 * 1024]), entry("b.bin", new byte[24 * 1024]));
 
         assertThatThrownBy(() -> ZipUtils.readEntries(zip, 64 * 1024, 32 * 1024))
                 .isInstanceOf(UncheckedIOException.class)
