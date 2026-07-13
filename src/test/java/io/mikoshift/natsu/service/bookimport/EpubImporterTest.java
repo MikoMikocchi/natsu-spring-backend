@@ -29,6 +29,7 @@ class EpubImporterTest {
                 52_428_800L,
                 524_288_000L,
                 List.of("*"),
+                List.of(),
                 rateLimit,
                 "http://localhost:3000/reset-password?token={token}",
                 "noreply@example.com",

@@ -46,6 +46,7 @@ class StorageQuotaServiceTest {
                         MAX_PACKAGE_BYTES,
                         MAX_STORAGE_PER_USER,
                         List.of("*"),
+                        List.of(),
                         rateLimit,
                         "http://localhost:3000/reset-password?token={token}",
                         "noreply@example.com",

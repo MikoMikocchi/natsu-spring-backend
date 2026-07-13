@@ -38,6 +38,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private final NatsuProperties properties;
     private final RateLimiter rateLimiter;
+    private final ClientIpResolver clientIpResolver;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -46,7 +47,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 "POST".equalsIgnoreCase(request.getMethod()) ? LIMITED_PATHS.get(request.getRequestURI()) : null;
         if (category != null) {
             NatsuProperties.RateLimit.Bucket config = bucketConfig(category);
-            if (!rateLimiter.tryConsume(category + "-ip", ClientIpResolver.resolve(request), config)) {
+            if (!rateLimiter.tryConsume(category + "-ip", clientIpResolver.resolve(request), config)) {
                 writeTooManyRequests(response, config.windowSeconds());
                 return;
             }

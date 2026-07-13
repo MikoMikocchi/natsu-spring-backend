@@ -21,10 +21,12 @@ import org.springframework.test.web.servlet.MockMvc;
  * share one fake remote address, and a category's per-IP bucket therefore persists across every
  * test method that hits that category for the life of the context -- each category below is
  * exercised by exactly one test method so bucket state never needs to be shared or reset between
- * tests.
+ * tests. {@code natsu.trusted-proxy-cidrs=127.0.0.1/32} simulates a local reverse proxy so
+ * {@code X-Forwarded-For} can be used to vary the resolved client IP in the register test.
  */
 @TestPropertySource(
         properties = {
+            "natsu.trusted-proxy-cidrs=127.0.0.1/32",
             "natsu.rate-limit.login.capacity=5",
             "natsu.rate-limit.login.window-seconds=60",
             "natsu.rate-limit.login-email.capacity=2",

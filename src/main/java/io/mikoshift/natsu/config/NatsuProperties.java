@@ -9,6 +9,13 @@ public record NatsuProperties(
         long maxPackageBytes,
         long maxStorageBytesPerUser,
         List<String> corsAllowedOrigins,
+        /**
+         * CIDR ranges of reverse proxies/load balancers in front of this app. {@code X-Forwarded-For}
+         * is consulted for per-IP rate limiting only when the direct TCP peer matches one of these
+         * ranges. Empty means the header is never trusted (appropriate when the app is exposed
+         * directly, without a proxy).
+         */
+        List<String> trustedProxyCidrs,
         RateLimit rateLimit,
         // Deep-link/web URL the mobile app (or a future web client) resolves the reset token
         // against. "{token}" is substituted with the raw (unhashed) reset token. No real web

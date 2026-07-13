@@ -38,10 +38,6 @@ spring:
 
 server:
   port: 3000
-  # Required for per-IP rate limiting (and any other getRemoteAddr() use) when deployed behind a
-  # reverse proxy/load balancer. Without this, every client appears as the proxy address and one
-  # aggressive client can exhaust shared auth throttles for everyone.
-  forward-headers-strategy: framework
 
 natsu:
   storage-root: ${NATSU_STORAGE_ROOT:./storage}
@@ -50,6 +46,10 @@ natsu:
   # Native Android clients don't send an Origin header, so CORS is mostly moot for them; kept
   # permissive and toggleable in case a browser-based tool or a future web client needs it.
   cors-allowed-origins: "*"
+  # CIDR ranges of reverse proxies/load balancers in front of this app. X-Forwarded-For is used for
+  # per-IP rate limiting only when the direct TCP peer matches one of these ranges. Override via
+  # NATSU_TRUSTED_PROXY_CIDRS (comma-separated) in deployments behind a real proxy/LB.
+  trusted-proxy-cidrs: []
   # Deep-link/web URL used in password reset emails; "{token}" is replaced with the raw reset
   # token. Placeholder until a real web/deep-link frontend exists -- override with
   # NATSU_PASSWORD_RESET_URL_TEMPLATE in any real deployment.
