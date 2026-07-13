@@ -11,7 +11,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Clock;
-import java.time.Duration;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +29,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Slf4j
 public class PasswordService {
 
-    private static final Duration RESET_TOKEN_TTL = Duration.ofHours(2);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
@@ -103,7 +101,7 @@ public class PasswordService {
                 If you did not request a password reset, you can safely ignore this email.
 
                 — The Natsu Team
-                """.formatted(userName, resetUrl, RESET_TOKEN_TTL.toHours()));
+                """.formatted(userName, resetUrl, properties.auth().resetTokenTtl().toHours()));
         try {
             mailSender.send(message);
         } catch (MailException e) {
@@ -120,7 +118,9 @@ public class PasswordService {
                 .findByResetPasswordToken(hashToken(request.token()))
                 .orElseThrow(() -> ValidationException.of("token", "is invalid"));
         if (user.getResetPasswordSentAt() == null
-                || user.getResetPasswordSentAt().plus(RESET_TOKEN_TTL).isBefore(clock.instant())) {
+                || user.getResetPasswordSentAt()
+                        .plus(properties.auth().resetTokenTtl())
+                        .isBefore(clock.instant())) {
             throw ValidationException.of("token", "has expired");
         }
         user.setPasswordHash(passwordEncoder.encode(request.password()));

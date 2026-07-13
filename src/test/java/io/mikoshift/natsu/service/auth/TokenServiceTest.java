@@ -46,7 +46,7 @@ class TokenServiceTest {
         lenient()
                 .when(natsuProperties.auth())
                 .thenReturn(new NatsuProperties.Auth(
-                        Duration.ofHours(1), Duration.ofDays(365), Duration.ofSeconds(30)));
+                        Duration.ofHours(1), Duration.ofDays(365), Duration.ofSeconds(30), Duration.ofHours(2)));
         tokenService = new TokenService(authTokenRepository, natsuProperties, clock);
         user = new User();
         user.setId(1L);

@@ -68,7 +68,7 @@ class ClientIpResolverTest {
                 rateLimit,
                 "http://localhost:3000/reset-password?token={token}",
                 "noreply@example.com",
-                new NatsuProperties.Auth(Duration.ofHours(1), Duration.ofDays(365), Duration.ofSeconds(30)),
+                new NatsuProperties.Auth(Duration.ofHours(1), Duration.ofDays(365), Duration.ofSeconds(30), Duration.ofHours(2)),
                 new NatsuProperties.BookImportRecovery(true, 15, 5, 3));
         return new ClientIpResolver(properties);
     }

@@ -61,6 +61,7 @@ natsu:
     access-token-ttl: 1h
     refresh-token-ttl: 365d
     refresh-token-grace-window: 30s
+    reset-token-ttl: 2h
   # Per-endpoint, per-dimension throttles (Bucket4j buckets, keyed and enforced in RateLimitFilter
   # and the auth/password controllers). Numbers mirror the sibling Rails backend's Rack::Attack config.
   rate-limit:
