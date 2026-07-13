@@ -3,13 +3,16 @@ package io.mikoshift.natsu.service.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.mikoshift.natsu.config.NatsuProperties;
 import io.mikoshift.natsu.entity.AuthToken;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.InvalidRefreshTokenException;
 import io.mikoshift.natsu.repository.AuthTokenRepository;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -26,12 +29,19 @@ class TokenServiceTest {
     @Mock
     private AuthTokenRepository authTokenRepository;
 
+    @Mock
+    private NatsuProperties natsuProperties;
+
     private TokenService tokenService;
     private User user;
 
     @BeforeEach
     void setUp() {
-        tokenService = new TokenService(authTokenRepository);
+        lenient()
+                .when(natsuProperties.auth())
+                .thenReturn(new NatsuProperties.Auth(
+                        Duration.ofHours(1), Duration.ofDays(365), Duration.ofSeconds(30)));
+        tokenService = new TokenService(authTokenRepository, natsuProperties);
         user = new User();
         user.setId(1L);
     }
@@ -49,6 +59,8 @@ class TokenServiceTest {
         assertThat(token.getAccessToken()).isNotEqualTo(token.getRefreshToken());
         assertThat(token.getAccessTokenExpiresAt()).isAfter(Instant.now());
         assertThat(token.getRefreshTokenExpiresAt()).isAfter(token.getAccessTokenExpiresAt());
+        Duration accessLifetime = Duration.between(Instant.now(), token.getAccessTokenExpiresAt());
+        assertThat(accessLifetime).isLessThanOrEqualTo(Duration.ofHours(1).plusSeconds(5));
     }
 
     @Test

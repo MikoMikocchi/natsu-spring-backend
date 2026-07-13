@@ -1,5 +1,6 @@
 package io.mikoshift.natsu.config;
 
+import java.time.Duration;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -24,6 +25,13 @@ public record NatsuProperties(
         String passwordResetUrlTemplate,
         // "From" address for outgoing mail. Override via NATSU_MAIL_FROM in any real deployment.
         String mailFrom,
+        /**
+         * Opaque bearer token lifetimes. Keep access short so clients call {@code /refresh} regularly
+         * -- rotation and reuse detection only run there, limiting exposure from a stolen access
+         * token. Revocation is checked on every request, so a short access TTL does not weaken
+         * immediate session kill.
+         */
+        Auth auth,
         BookImportRecovery bookImportRecovery) {
 
     /** Per-entry decompressed cap as a multiple of {@link #maxPackageBytes()}. */
@@ -57,6 +65,8 @@ public record NatsuProperties(
 
         public record Bucket(int capacity, int windowSeconds) {}
     }
+
+    public record Auth(Duration accessTokenTtl, Duration refreshTokenTtl, Duration refreshTokenGraceWindow) {}
 
     /**
      * Governs the job that finds {@code Document}s stuck in {@code PENDING} (e.g. the app crashed or

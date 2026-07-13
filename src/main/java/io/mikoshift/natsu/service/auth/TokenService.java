@@ -1,11 +1,11 @@
 package io.mikoshift.natsu.service.auth;
 
+import io.mikoshift.natsu.config.NatsuProperties;
 import io.mikoshift.natsu.entity.AuthToken;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.InvalidRefreshTokenException;
 import io.mikoshift.natsu.repository.AuthTokenRepository;
 import java.security.SecureRandom;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
@@ -17,18 +17,21 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Issues, rotates, resolves and revokes opaque bearer tokens backed by {@link AuthToken} rows
  * (opaque access/refresh token pair stored in the database, without JWT).
+ *
+ * <p>Access tokens are intentionally short-lived ({@link NatsuProperties.Auth#accessTokenTtl()})
+ * so clients refresh regularly and {@link #rotate} can run rotation plus reuse detection. A stolen
+ * access token otherwise never hits {@code /refresh}, leaving the refresh-token machinery idle.
+ * Immediate revocation still works on every API call via {@link #resolveAccessToken}.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class TokenService {
 
-    private static final Duration ACCESS_TOKEN_TTL = Duration.ofDays(30);
-    private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(365);
-    private static final Duration REFRESH_TOKEN_GRACE_WINDOW = Duration.ofSeconds(30);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final AuthTokenRepository authTokenRepository;
+    private final NatsuProperties natsuProperties;
 
     @Transactional
     public AuthToken issue(User user, String deviceName) {
@@ -37,8 +40,8 @@ public class TokenService {
         token.setUser(user);
         token.setAccessToken(generateOpaqueToken());
         token.setRefreshToken(generateOpaqueToken());
-        token.setAccessTokenExpiresAt(now.plus(ACCESS_TOKEN_TTL));
-        token.setRefreshTokenExpiresAt(now.plus(REFRESH_TOKEN_TTL));
+        token.setAccessTokenExpiresAt(now.plus(natsuProperties.auth().accessTokenTtl()));
+        token.setRefreshTokenExpiresAt(now.plus(natsuProperties.auth().refreshTokenTtl()));
         token.setName(deviceName);
         return authTokenRepository.save(token);
     }
@@ -52,8 +55,9 @@ public class TokenService {
 
     /**
      * Rotates the access/refresh pair for the session identified by {@code presentedRefreshToken}. If
-     * the presented token is the *previous* refresh token, presented within {@link
-     * #REFRESH_TOKEN_GRACE_WINDOW} of the rotation that superseded it, this is treated as a client
+     * the presented token is the *previous* refresh token, presented within the configured grace
+     * window ({@link NatsuProperties.Auth#refreshTokenGraceWindow()}) of the rotation that
+     * superseded it, this is treated as a client
      * retrying a request that raced that rotation: the already-rotated current pair is returned
      * instead of rotating again, avoiding invalidating the client's now-current session.
      *
@@ -87,11 +91,11 @@ public class TokenService {
         }
         Instant now = Instant.now();
         token.setPreviousRefreshToken(token.getRefreshToken());
-        token.setPreviousRefreshTokenExpiresAt(now.plus(REFRESH_TOKEN_GRACE_WINDOW));
+        token.setPreviousRefreshTokenExpiresAt(now.plus(natsuProperties.auth().refreshTokenGraceWindow()));
         token.setAccessToken(generateOpaqueToken());
         token.setRefreshToken(generateOpaqueToken());
-        token.setAccessTokenExpiresAt(now.plus(ACCESS_TOKEN_TTL));
-        token.setRefreshTokenExpiresAt(now.plus(REFRESH_TOKEN_TTL));
+        token.setAccessTokenExpiresAt(now.plus(natsuProperties.auth().accessTokenTtl()));
+        token.setRefreshTokenExpiresAt(now.plus(natsuProperties.auth().refreshTokenTtl()));
         return authTokenRepository.save(token);
     }
 

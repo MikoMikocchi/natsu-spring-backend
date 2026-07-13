@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mikoshift.natsu.config.NatsuProperties;
+import java.time.Duration;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -33,6 +34,7 @@ class EpubImporterTest {
                 rateLimit,
                 "http://localhost:3000/reset-password?token={token}",
                 "noreply@example.com",
+                new NatsuProperties.Auth(Duration.ofHours(1), Duration.ofDays(365), Duration.ofSeconds(30)),
                 new NatsuProperties.BookImportRecovery(true, 15, 5, 3)));
     }
 

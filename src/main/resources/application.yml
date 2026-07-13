@@ -57,6 +57,10 @@ natsu:
   # "From" address on outgoing mail (password reset, etc). Override in production via env var --
   # most SMTP providers reject mail sent from an address they haven't verified.
   mail-from: ${NATSU_MAIL_FROM:noreply@example.com}
+  auth:
+    access-token-ttl: 1h
+    refresh-token-ttl: 365d
+    refresh-token-grace-window: 30s
   # Per-endpoint, per-dimension throttles (Bucket4j buckets, keyed and enforced in RateLimitFilter
   # and the auth/password controllers). Numbers mirror the sibling Rails backend's Rack::Attack config.
   rate-limit:

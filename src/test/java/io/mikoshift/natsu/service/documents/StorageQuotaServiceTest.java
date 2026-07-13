@@ -10,6 +10,7 @@ import io.mikoshift.natsu.exception.QuotaExceededException;
 import io.mikoshift.natsu.exception.ValidationException;
 import io.mikoshift.natsu.repository.DocumentRepository;
 import io.mikoshift.natsu.repository.UserRepository;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,7 @@ class StorageQuotaServiceTest {
                         rateLimit,
                         "http://localhost:3000/reset-password?token={token}",
                         "noreply@example.com",
+                        new NatsuProperties.Auth(Duration.ofHours(1), Duration.ofDays(365), Duration.ofSeconds(30)),
                         new NatsuProperties.BookImportRecovery(true, 15, 5, 3)));
         user = new User();
         user.setId(1L);
