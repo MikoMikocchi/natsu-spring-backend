@@ -32,7 +32,9 @@ public record NatsuProperties(
          * checked on every request, so a short access TTL does not weaken immediate session kill.
          */
         Auth auth,
-        BookImportRecovery bookImportRecovery) {
+        BookImportRecovery bookImportRecovery,
+        DictionaryCache dictionaryCache,
+        BookImportExecutor bookImportExecutor) {
 
     /** Per-entry decompressed cap as a multiple of {@link #maxPackageBytes()}. */
     public static final int ZIP_DECOMPRESSED_RATIO_PER_ENTRY = 2;
@@ -61,10 +63,23 @@ public record NatsuProperties(
             Bucket register,
             Bucket passwordReset,
             Bucket refresh,
-            Bucket refreshToken) {
+            Bucket refreshToken,
+            /** In-process cache of Bucket4j instances keyed by (category, client); bounds memory. */
+            BucketCache bucketCache) {
 
         public record Bucket(int capacity, int windowSeconds) {}
+
+        public record BucketCache(int expireAfterAccessMinutes, int maximumSize) {}
     }
+
+    /** In-process Caffeine caches for dictionary lookup (no Redis in single-instance deployments). */
+    public record DictionaryCache(CacheSpec lookup, CacheSpec enabledIds) {
+
+        public record CacheSpec(int expireAfterWriteMinutes, int maximumSize) {}
+    }
+
+    /** Thread pool for {@code @Async} book import tasks ({@code bookImportExecutor}). */
+    public record BookImportExecutor(int corePoolSize, int maxPoolSize, int queueCapacity) {}
 
     public record Auth(
             Duration accessTokenTtl,

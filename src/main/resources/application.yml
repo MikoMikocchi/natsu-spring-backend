@@ -83,6 +83,23 @@ natsu:
     refresh-token:
       capacity: 5
       window-seconds: 60
+    # Caffeine cache backing per-(category,key) Bucket4j instances in RateLimiter.
+    bucket-cache:
+      expire-after-access-minutes: 10
+      maximum-size: 10000
+  # In-process dictionary caches (invalidated via User.dictCacheVersion in cache keys).
+  dictionary-cache:
+    lookup:
+      expire-after-write-minutes: 5
+      maximum-size: 10000
+    enabled-ids:
+      expire-after-write-minutes: 30
+      maximum-size: 10000
+  # Thread pool for @Async book imports (bookImportExecutor bean).
+  book-import-executor:
+    core-pool-size: 2
+    max-pool-size: 4
+    queue-capacity: 50
   # Recovers documents left stuck in PENDING by a crash/restart mid-import (the in-memory async
   # task that was processing them is simply gone otherwise). Runs on startup and periodically;
   # see StaleImportRecoveryService.

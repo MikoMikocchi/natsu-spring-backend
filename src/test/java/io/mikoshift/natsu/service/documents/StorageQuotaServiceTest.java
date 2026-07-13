@@ -4,14 +4,12 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import io.mikoshift.natsu.config.NatsuProperties;
+import io.mikoshift.natsu.config.NatsuPropertiesFixtures;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.QuotaExceededException;
 import io.mikoshift.natsu.exception.ValidationException;
 import io.mikoshift.natsu.repository.DocumentRepository;
 import io.mikoshift.natsu.repository.UserRepository;
-import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,23 +34,10 @@ class StorageQuotaServiceTest {
 
     @BeforeEach
     void setUp() {
-        NatsuProperties.RateLimit.Bucket bucket = new NatsuProperties.RateLimit.Bucket(5, 60);
-        NatsuProperties.RateLimit rateLimit =
-                new NatsuProperties.RateLimit(bucket, bucket, bucket, bucket, bucket, bucket);
         quotaService = new StorageQuotaService(
                 documentRepository,
                 userRepository,
-                new NatsuProperties(
-                        "/tmp/natsu-test",
-                        MAX_PACKAGE_BYTES,
-                        MAX_STORAGE_PER_USER,
-                        List.of("*"),
-                        List.of(),
-                        rateLimit,
-                        "http://localhost:3000/reset-password?token={token}",
-                        "noreply@example.com",
-                        new NatsuProperties.Auth(Duration.ofHours(1), Duration.ofDays(365), Duration.ofSeconds(30), Duration.ofHours(2)),
-                        new NatsuProperties.BookImportRecovery(true, 15, 5, 3)));
+                NatsuPropertiesFixtures.minimal("/tmp/natsu-test", MAX_PACKAGE_BYTES, MAX_STORAGE_PER_USER));
         user = new User();
         user.setId(1L);
     }

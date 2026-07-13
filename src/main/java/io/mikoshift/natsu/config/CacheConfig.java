@@ -7,6 +7,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.cache.support.SimpleCacheManager;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,26 +19,31 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @EnableCaching
+@RequiredArgsConstructor
 public class CacheConfig {
 
     public static final String DICT_LOOKUP_CACHE = "dictLookup";
     public static final String DICT_ENABLED_IDS_CACHE = "dictEnabledDictIds";
 
+    private final NatsuProperties properties;
+
     @Bean
     CacheManager cacheManager() {
+        NatsuProperties.DictionaryCache.CacheSpec lookup = properties.dictionaryCache().lookup();
+        NatsuProperties.DictionaryCache.CacheSpec enabledIds = properties.dictionaryCache().enabledIds();
         SimpleCacheManager manager = new SimpleCacheManager();
         manager.setCaches(List.of(
                 new CaffeineCache(
                         DICT_LOOKUP_CACHE,
                         Caffeine.newBuilder()
-                                .expireAfterWrite(Duration.ofMinutes(5))
-                                .maximumSize(10_000)
+                                .expireAfterWrite(Duration.ofMinutes(lookup.expireAfterWriteMinutes()))
+                                .maximumSize(lookup.maximumSize())
                                 .build()),
                 new CaffeineCache(
                         DICT_ENABLED_IDS_CACHE,
                         Caffeine.newBuilder()
-                                .expireAfterWrite(Duration.ofMinutes(30))
-                                .maximumSize(10_000)
+                                .expireAfterWrite(Duration.ofMinutes(enabledIds.expireAfterWriteMinutes()))
+                                .maximumSize(enabledIds.maximumSize())
                                 .build())));
         return manager;
     }

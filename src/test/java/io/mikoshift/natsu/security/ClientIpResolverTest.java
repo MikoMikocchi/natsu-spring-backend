@@ -3,14 +3,11 @@ package io.mikoshift.natsu.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mikoshift.natsu.config.NatsuProperties;
-import java.time.Duration;
-import java.util.List;
+import io.mikoshift.natsu.config.NatsuPropertiesFixtures;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 class ClientIpResolverTest {
-
-    private static final NatsuProperties.RateLimit.Bucket BUCKET = new NatsuProperties.RateLimit.Bucket(5, 60);
 
     @Test
     void ignoresForwardedForWhenDirectPeerIsNotTrusted() {
@@ -57,19 +54,8 @@ class ClientIpResolverTest {
     }
 
     private static ClientIpResolver resolverWithTrustedProxies(String... trustedProxyCidrs) {
-        NatsuProperties.RateLimit rateLimit =
-                new NatsuProperties.RateLimit(BUCKET, BUCKET, BUCKET, BUCKET, BUCKET, BUCKET);
-        NatsuProperties properties = new NatsuProperties(
-                "/tmp/natsu-test",
-                52_428_800L,
-                524_288_000L,
-                List.of("*"),
-                List.of(trustedProxyCidrs),
-                rateLimit,
-                "http://localhost:3000/reset-password?token={token}",
-                "noreply@example.com",
-                new NatsuProperties.Auth(Duration.ofHours(1), Duration.ofDays(365), Duration.ofSeconds(30), Duration.ofHours(2)),
-                new NatsuProperties.BookImportRecovery(true, 15, 5, 3));
+        NatsuProperties properties = NatsuPropertiesFixtures.minimal(
+                "/tmp/natsu-test", 52_428_800L, 524_288_000L, trustedProxyCidrs);
         return new ClientIpResolver(properties);
     }
 }

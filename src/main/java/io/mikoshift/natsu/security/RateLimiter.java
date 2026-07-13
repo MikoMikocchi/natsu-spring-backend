@@ -7,7 +7,6 @@ import io.github.bucket4j.Refill;
 import io.mikoshift.natsu.config.NatsuProperties;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentMap;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,14 +16,18 @@ import org.springframework.stereotype.Component;
  * config and a key; buckets are cached per (category, key) pair.
  */
 @Component
-@RequiredArgsConstructor
 public class RateLimiter {
 
-    private final ConcurrentMap<String, Bucket> buckets = Caffeine.newBuilder()
-            .expireAfterAccess(Duration.ofMinutes(10))
-            .maximumSize(10_000)
-            .<String, Bucket>build()
-            .asMap();
+    private final ConcurrentMap<String, Bucket> buckets;
+
+    public RateLimiter(NatsuProperties properties) {
+        NatsuProperties.RateLimit.BucketCache cache = properties.rateLimit().bucketCache();
+        buckets = Caffeine.newBuilder()
+                .expireAfterAccess(Duration.ofMinutes(cache.expireAfterAccessMinutes()))
+                .maximumSize(cache.maximumSize())
+                .<String, Bucket>build()
+                .asMap();
+    }
 
     /**
      * Returns true if the call is allowed, false if the bucket for this category/key is exhausted.
