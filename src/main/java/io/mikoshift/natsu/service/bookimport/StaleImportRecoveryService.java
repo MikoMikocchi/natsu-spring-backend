@@ -4,6 +4,7 @@ import io.mikoshift.natsu.config.NatsuProperties;
 import io.mikoshift.natsu.entity.Document;
 import io.mikoshift.natsu.repository.DocumentRepository;
 import io.mikoshift.natsu.service.bookimport.BookImportPersistence.RecoveryOutcome;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -61,6 +62,7 @@ public class StaleImportRecoveryService {
     private final DocumentRepository documentRepository;
     private final BookImportPersistence persistence;
     private final NatsuProperties properties;
+    private final Clock clock;
 
     /**
      * {@code initialDelay = 0} makes this run once immediately on startup -- catching anything
@@ -79,7 +81,7 @@ public class StaleImportRecoveryService {
         if (!config.enabled()) {
             return;
         }
-        Instant cutoff = Instant.now().minus(config.staleAfterMinutes(), ChronoUnit.MINUTES);
+        Instant cutoff = clock.instant().minus(config.staleAfterMinutes(), ChronoUnit.MINUTES);
 
         List<Document> candidates = documentRepository.findByStatusAndCreatedAtBefore(Document.Status.PENDING, cutoff);
         for (Document candidate : candidates) {

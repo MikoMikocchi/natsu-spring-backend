@@ -10,7 +10,7 @@ import io.mikoshift.natsu.service.bookimport.FormatDetector;
 import io.mikoshift.natsu.service.bookimport.ImportException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +24,7 @@ public class DocumentImportService {
     private final FormatDetector formatDetector;
     private final StorageQuotaService storageQuotaService;
     private final BookImportOrchestrator orchestrator;
+    private final Clock clock;
 
     /**
      * Creates the pending document and hands it to the async orchestrator. Deliberately NOT
@@ -55,7 +56,7 @@ public class DocumentImportService {
         document.setTitle(fallbackTitle);
         document.setSourceFormat(format);
         document.setStatus(Document.Status.PENDING);
-        long now = Instant.now().toEpochMilli();
+        long now = clock.millis();
         document.setImportedAt(now);
         document.setUpdatedAtMs(now);
         document = documentRepository.save(document);

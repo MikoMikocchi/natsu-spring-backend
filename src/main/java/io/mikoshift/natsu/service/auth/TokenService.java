@@ -6,6 +6,7 @@ import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.InvalidRefreshTokenException;
 import io.mikoshift.natsu.repository.AuthTokenRepository;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
@@ -32,10 +33,11 @@ public class TokenService {
 
     private final AuthTokenRepository authTokenRepository;
     private final NatsuProperties natsuProperties;
+    private final Clock clock;
 
     @Transactional
     public AuthToken issue(User user, String deviceName) {
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         AuthToken token = new AuthToken();
         token.setUser(user);
         token.setAccessToken(generateOpaqueToken());
@@ -50,7 +52,7 @@ public class TokenService {
     public Optional<AuthToken> resolveAccessToken(String accessToken) {
         return authTokenRepository
                 .findByAccessTokenAndRevokedAtIsNull(accessToken)
-                .filter(token -> token.getAccessTokenExpiresAt().isAfter(Instant.now()));
+                .filter(token -> token.getAccessTokenExpiresAt().isAfter(clock.instant()));
     }
 
     /**
@@ -77,7 +79,7 @@ public class TokenService {
                 .findByPreviousRefreshTokenAndRevokedAtIsNull(presentedRefreshToken)
                 .orElseThrow(InvalidRefreshTokenException::new);
         if (previous.getPreviousRefreshTokenExpiresAt() == null
-                || previous.getPreviousRefreshTokenExpiresAt().isBefore(Instant.now())) {
+                || previous.getPreviousRefreshTokenExpiresAt().isBefore(clock.instant())) {
             log.warn("Refresh token reuse detected for user {}; revoking all sessions", previous.getUser().getId());
             revokeAll(previous.getUser());
             throw new InvalidRefreshTokenException();
@@ -86,10 +88,10 @@ public class TokenService {
     }
 
     private AuthToken doRotate(AuthToken token) {
-        if (token.getRefreshTokenExpiresAt().isBefore(Instant.now())) {
+        if (token.getRefreshTokenExpiresAt().isBefore(clock.instant())) {
             throw new InvalidRefreshTokenException();
         }
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         token.setPreviousRefreshToken(token.getRefreshToken());
         token.setPreviousRefreshTokenExpiresAt(now.plus(natsuProperties.auth().refreshTokenGraceWindow()));
         token.setAccessToken(generateOpaqueToken());
@@ -101,13 +103,13 @@ public class TokenService {
 
     @Transactional
     public void revoke(AuthToken token) {
-        token.setRevokedAt(Instant.now());
+        token.setRevokedAt(clock.instant());
         authTokenRepository.save(token);
     }
 
     @Transactional
     public void revokeAll(User user) {
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         authTokenRepository
                 .findAllByUserAndRevokedAtIsNullOrderByCreatedAtDesc(user)
                 .forEach(token -> token.setRevokedAt(now));

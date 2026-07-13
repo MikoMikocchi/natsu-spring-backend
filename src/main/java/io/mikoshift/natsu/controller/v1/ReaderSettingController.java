@@ -5,7 +5,7 @@ import io.mikoshift.natsu.dto.response.ReaderSettingResponse;
 import io.mikoshift.natsu.dto.response.ReaderSettingShowResponse;
 import io.mikoshift.natsu.entity.ReaderSetting;
 import io.mikoshift.natsu.entity.User;
-import io.mikoshift.natsu.service.ServerTimeService;
+import java.time.Clock;
 import io.mikoshift.natsu.service.settings.ReaderSettingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReaderSettingController {
 
     private final ReaderSettingService readerSettingService;
-    private final ServerTimeService serverTimeService;
+    private final Clock clock;
 
     @GetMapping
     ReaderSettingShowResponse show(@AuthenticationPrincipal User user) {
@@ -36,6 +36,6 @@ public class ReaderSettingController {
     }
 
     private ReaderSettingShowResponse toResponse(ReaderSetting settings) {
-        return new ReaderSettingShowResponse(ReaderSettingResponse.from(settings), serverTimeService.nowMs());
+        return new ReaderSettingShowResponse(ReaderSettingResponse.from(settings), clock.millis());
     }
 }

@@ -15,6 +15,7 @@ import io.mikoshift.natsu.exception.ValidationException;
 import io.mikoshift.natsu.repository.DocumentRepository;
 import io.mikoshift.natsu.service.storage.PackageStorageService;
 import io.mikoshift.natsu.service.storage.StoredPackage;
+import java.time.Clock;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Optional;
@@ -47,7 +48,8 @@ class PackageUploadServiceTest {
 
     @BeforeEach
     void setUp() {
-        uploadService = new PackageUploadService(documentRepository, storageQuotaService, packageStorageService);
+        uploadService = new PackageUploadService(
+                documentRepository, storageQuotaService, packageStorageService, Clock.systemUTC());
         user = new User();
         user.setId(1L);
         documentId = UUID.randomUUID();

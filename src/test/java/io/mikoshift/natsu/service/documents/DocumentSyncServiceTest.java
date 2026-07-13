@@ -13,6 +13,9 @@ import io.mikoshift.natsu.entity.Document;
 import io.mikoshift.natsu.entity.Document.SourceFormat;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.repository.DocumentRepository;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,15 +28,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DocumentSyncServiceTest {
 
+    private static final Instant FIXED_NOW = Instant.parse("2026-01-01T12:00:00Z");
+
     @Mock
     private DocumentRepository documentRepository;
 
     private DocumentSyncService syncService;
+    private Clock clock;
     private User user;
 
     @BeforeEach
     void setUp() {
-        syncService = new DocumentSyncService(documentRepository);
+        clock = Clock.fixed(FIXED_NOW, ZoneOffset.UTC);
+        syncService = new DocumentSyncService(documentRepository, clock);
         user = new User();
         user.setId(1L);
     }
@@ -138,7 +145,7 @@ class DocumentSyncServiceTest {
 
         syncService.sync(user, new DocumentSyncRequest(List.of(deleteItem)));
 
-        assertThat(stored.getDeletedAt()).isNotNull();
+        assertThat(stored.getDeletedAt()).isEqualTo(clock.instant());
     }
 
     @Test

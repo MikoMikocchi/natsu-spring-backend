@@ -12,8 +12,10 @@ import io.mikoshift.natsu.entity.AuthToken;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.InvalidRefreshTokenException;
 import io.mikoshift.natsu.repository.AuthTokenRepository;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +28,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TokenServiceTest {
 
+    private static final Instant FIXED_NOW = Instant.parse("2026-01-01T12:00:00Z");
+
     @Mock
     private AuthTokenRepository authTokenRepository;
 
@@ -33,15 +37,17 @@ class TokenServiceTest {
     private NatsuProperties natsuProperties;
 
     private TokenService tokenService;
+    private Clock clock;
     private User user;
 
     @BeforeEach
     void setUp() {
+        clock = Clock.fixed(FIXED_NOW, ZoneOffset.UTC);
         lenient()
                 .when(natsuProperties.auth())
                 .thenReturn(new NatsuProperties.Auth(
                         Duration.ofHours(1), Duration.ofDays(365), Duration.ofSeconds(30)));
-        tokenService = new TokenService(authTokenRepository, natsuProperties);
+        tokenService = new TokenService(authTokenRepository, natsuProperties, clock);
         user = new User();
         user.setId(1L);
     }
@@ -57,16 +63,16 @@ class TokenServiceTest {
         assertThat(token.getAccessToken()).isNotBlank();
         assertThat(token.getRefreshToken()).isNotBlank();
         assertThat(token.getAccessToken()).isNotEqualTo(token.getRefreshToken());
-        assertThat(token.getAccessTokenExpiresAt()).isAfter(Instant.now());
+        assertThat(token.getAccessTokenExpiresAt()).isAfter(clock.instant());
         assertThat(token.getRefreshTokenExpiresAt()).isAfter(token.getAccessTokenExpiresAt());
-        Duration accessLifetime = Duration.between(Instant.now(), token.getAccessTokenExpiresAt());
+        Duration accessLifetime = Duration.between(clock.instant(), token.getAccessTokenExpiresAt());
         assertThat(accessLifetime).isLessThanOrEqualTo(Duration.ofHours(1).plusSeconds(5));
     }
 
     @Test
     void resolveAccessTokenReturnsEmptyWhenTokenIsExpired() {
         AuthToken expired = new AuthToken();
-        expired.setAccessTokenExpiresAt(Instant.now().minus(1, ChronoUnit.MINUTES));
+        expired.setAccessTokenExpiresAt(clock.instant().minus(1, ChronoUnit.MINUTES));
         when(authTokenRepository.findByAccessTokenAndRevokedAtIsNull("expired-token"))
                 .thenReturn(Optional.of(expired));
 
@@ -78,7 +84,7 @@ class TokenServiceTest {
     @Test
     void resolveAccessTokenReturnsTokenWhenStillValid() {
         AuthToken valid = new AuthToken();
-        valid.setAccessTokenExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+        valid.setAccessTokenExpiresAt(clock.instant().plus(1, ChronoUnit.DAYS));
         when(authTokenRepository.findByAccessTokenAndRevokedAtIsNull("valid-token"))
                 .thenReturn(Optional.of(valid));
 
@@ -91,7 +97,7 @@ class TokenServiceTest {
     void rotateIssuesNewPairAndRemembersThePreviousRefreshToken() {
         AuthToken current = new AuthToken();
         current.setRefreshToken("old-refresh");
-        current.setRefreshTokenExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+        current.setRefreshTokenExpiresAt(clock.instant().plus(1, ChronoUnit.DAYS));
         when(authTokenRepository.findByRefreshTokenAndRevokedAtIsNull("old-refresh"))
                 .thenReturn(Optional.of(current));
         when(authTokenRepository.save(any(AuthToken.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -100,7 +106,7 @@ class TokenServiceTest {
 
         assertThat(rotated.getPreviousRefreshToken()).isEqualTo("old-refresh");
         assertThat(rotated.getRefreshToken()).isNotEqualTo("old-refresh");
-        assertThat(rotated.getPreviousRefreshTokenExpiresAt()).isAfter(Instant.now());
+        assertThat(rotated.getPreviousRefreshTokenExpiresAt()).isAfter(clock.instant());
         verify(authTokenRepository).save(current);
     }
 
@@ -108,7 +114,7 @@ class TokenServiceTest {
     void rotateRejectsAnExpiredRefreshToken() {
         AuthToken current = new AuthToken();
         current.setRefreshToken("old-refresh");
-        current.setRefreshTokenExpiresAt(Instant.now().minus(1, ChronoUnit.MINUTES));
+        current.setRefreshTokenExpiresAt(clock.instant().minus(1, ChronoUnit.MINUTES));
         when(authTokenRepository.findByRefreshTokenAndRevokedAtIsNull("old-refresh"))
                 .thenReturn(Optional.of(current));
 
@@ -123,8 +129,8 @@ class TokenServiceTest {
         AuthToken alreadyRotated = new AuthToken();
         alreadyRotated.setRefreshToken("new-refresh");
         alreadyRotated.setPreviousRefreshToken("stale-refresh");
-        alreadyRotated.setPreviousRefreshTokenExpiresAt(Instant.now().plus(10, ChronoUnit.SECONDS));
-        alreadyRotated.setRefreshTokenExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+        alreadyRotated.setPreviousRefreshTokenExpiresAt(clock.instant().plus(10, ChronoUnit.SECONDS));
+        alreadyRotated.setRefreshTokenExpiresAt(clock.instant().plus(1, ChronoUnit.DAYS));
         when(authTokenRepository.findByRefreshTokenAndRevokedAtIsNull("stale-refresh"))
                 .thenReturn(Optional.empty());
         when(authTokenRepository.findByPreviousRefreshTokenAndRevokedAtIsNull("stale-refresh"))
@@ -146,8 +152,8 @@ class TokenServiceTest {
         alreadyRotated.setUser(user);
         alreadyRotated.setRefreshToken("new-refresh");
         alreadyRotated.setPreviousRefreshToken("stale-refresh");
-        alreadyRotated.setPreviousRefreshTokenExpiresAt(Instant.now().minus(1, ChronoUnit.SECONDS));
-        alreadyRotated.setRefreshTokenExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+        alreadyRotated.setPreviousRefreshTokenExpiresAt(clock.instant().minus(1, ChronoUnit.SECONDS));
+        alreadyRotated.setRefreshTokenExpiresAt(clock.instant().plus(1, ChronoUnit.DAYS));
         when(authTokenRepository.findByRefreshTokenAndRevokedAtIsNull("stale-refresh"))
                 .thenReturn(Optional.empty());
         when(authTokenRepository.findByPreviousRefreshTokenAndRevokedAtIsNull("stale-refresh"))

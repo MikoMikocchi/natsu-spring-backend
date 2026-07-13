@@ -8,7 +8,7 @@ import io.mikoshift.natsu.repository.DocumentSearchTextRepository;
 import io.mikoshift.natsu.service.documents.StorageQuotaService;
 import io.mikoshift.natsu.service.storage.PackageStorageService;
 import io.mikoshift.natsu.service.storage.StoredPackage;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,6 +28,7 @@ class BookImportPersistence {
     private final DocumentSearchTextRepository documentSearchTextRepository;
     private final StorageQuotaService storageQuotaService;
     private final PackageStorageService packageStorageService;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     Document findPending(UUID documentId) {
@@ -51,11 +52,11 @@ class BookImportPersistence {
             packageStorageService.delete(documentId);
             document.setStatus(Document.Status.FAILED);
             document.setImportError(e.getMessage());
-            document.setUpdatedAtMs(Instant.now().toEpochMilli());
+            document.setUpdatedAtMs(clock.millis());
             return;
         }
 
-        long nowMs = Instant.now().toEpochMilli();
+        long nowMs = clock.millis();
         document.setTitle(title);
         document.setCharCount(charCount);
         document.setPackageSizeBytes(stored.sizeBytes());
@@ -72,7 +73,7 @@ class BookImportPersistence {
         documentRepository.findById(documentId).ifPresent(document -> {
             document.setStatus(Document.Status.FAILED);
             document.setImportError(message);
-            document.setUpdatedAtMs(Instant.now().toEpochMilli());
+            document.setUpdatedAtMs(clock.millis());
         });
     }
 
@@ -106,7 +107,7 @@ class BookImportPersistence {
         document.setImportAttempts(attempts);
         document.setStatus(Document.Status.FAILED);
         document.setImportError("Import was interrupted and could not be resumed; please re-upload the file.");
-        document.setUpdatedAtMs(Instant.now().toEpochMilli());
+        document.setUpdatedAtMs(clock.millis());
 
         return attempts > maxAttempts ? RecoveryOutcome.FAILED_ATTEMPTS_EXCEEDED : RecoveryOutcome.FAILED_STALE;
     }

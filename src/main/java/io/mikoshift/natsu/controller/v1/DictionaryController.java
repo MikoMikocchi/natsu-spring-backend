@@ -6,7 +6,7 @@ import io.mikoshift.natsu.dto.response.DictionaryResponse;
 import io.mikoshift.natsu.dto.response.PaginationResponse;
 import io.mikoshift.natsu.entity.Dictionary;
 import io.mikoshift.natsu.entity.User;
-import io.mikoshift.natsu.service.ServerTimeService;
+import java.time.Clock;
 import io.mikoshift.natsu.service.dictionary.DictionaryListService;
 import io.mikoshift.natsu.service.dictionary.DictionaryLookupService;
 import io.mikoshift.natsu.service.dictionary.DictionaryToggleService;
@@ -31,7 +31,7 @@ public class DictionaryController {
     private final DictionaryListService dictionaryListService;
     private final DictionaryToggleService dictionaryToggleService;
     private final DictionaryLookupService dictionaryLookupService;
-    private final ServerTimeService serverTimeService;
+    private final Clock clock;
 
     @GetMapping("/v1/dictionaries")
     DictionaryIndexResponse index(
@@ -43,7 +43,7 @@ public class DictionaryController {
                 .map(dictionary ->
                         DictionaryResponse.from(dictionary, dictionaryListService.isEnabled(user, dictionary)))
                 .toList();
-        return new DictionaryIndexResponse(dictionaries, PaginationResponse.from(result), serverTimeService.nowMs());
+        return new DictionaryIndexResponse(dictionaries, PaginationResponse.from(result), clock.millis());
     }
 
     @PatchMapping("/v1/dictionaries/{id}/toggle")
@@ -54,6 +54,6 @@ public class DictionaryController {
 
     @GetMapping("/v1/dictionary/lookup")
     DictionaryLookupResponse lookup(@AuthenticationPrincipal User user, @RequestParam @NotBlank String q) {
-        return new DictionaryLookupResponse(dictionaryLookupService.lookup(user, q), serverTimeService.nowMs());
+        return new DictionaryLookupResponse(dictionaryLookupService.lookup(user, q), clock.millis());
     }
 }

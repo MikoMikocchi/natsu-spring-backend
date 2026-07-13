@@ -5,7 +5,7 @@ import io.mikoshift.natsu.dto.request.DocumentSyncRequest;
 import io.mikoshift.natsu.entity.Document;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.repository.DocumentRepository;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DocumentSyncService {
 
     private final DocumentRepository documentRepository;
+    private final Clock clock;
 
     /**
      * Batch-upserts up to 100 documents. Each row is merged independently: a row whose updatedAtMs is
@@ -48,7 +49,7 @@ public class DocumentSyncService {
         document.setLastReadBlockIndex(item.lastReadBlockIndex());
         document.setLastReadBlockCharOffset(item.lastReadBlockCharOffset());
         document.setUpdatedAtMs(item.updatedAtMs());
-        document.setDeletedAt(Boolean.TRUE.equals(item.deleted()) ? Instant.now() : null);
+        document.setDeletedAt(Boolean.TRUE.equals(item.deleted()) ? clock.instant() : null);
         return documentRepository.save(document);
     }
 }

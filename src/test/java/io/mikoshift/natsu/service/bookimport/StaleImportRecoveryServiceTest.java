@@ -7,6 +7,7 @@ import io.mikoshift.natsu.entity.Document;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.repository.DocumentRepository;
 import io.mikoshift.natsu.repository.UserRepository;
+import java.time.Clock;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -59,6 +60,9 @@ class StaleImportRecoveryServiceTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private Clock clock;
+
     private User createUser(String email) {
         User user = new User();
         user.setName("Reader");
@@ -77,7 +81,7 @@ class StaleImportRecoveryServiceTest {
         document.setImportAttempts(importAttempts);
         document = documentRepository.save(document);
 
-        Instant backdated = Instant.now().minus(ageMinutes, ChronoUnit.MINUTES);
+        Instant backdated = clock.instant().minus(ageMinutes, ChronoUnit.MINUTES);
         jdbcTemplate.update(
                 "update documents set created_at = ? where id = ?", Timestamp.from(backdated), document.getId());
         return document;

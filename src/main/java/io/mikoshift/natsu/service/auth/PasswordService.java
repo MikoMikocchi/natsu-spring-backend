@@ -10,8 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +38,7 @@ public class PasswordService {
     private final TokenService tokenService;
     private final JavaMailSender mailSender;
     private final NatsuProperties properties;
+    private final Clock clock;
 
     @Transactional
     public void changePassword(User user, ChangePasswordRequest request) {
@@ -58,7 +59,7 @@ public class PasswordService {
         userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
             String rawToken = generateToken();
             user.setResetPasswordToken(hashToken(rawToken));
-            user.setResetPasswordSentAt(Instant.now());
+            user.setResetPasswordSentAt(clock.instant());
             // Deferred until the transaction actually commits: sending inline here would hold
             // the DB connection open for the full SMTP round-trip, and -- worse -- could mail out
             // a working-looking reset link whose token never made it to the database if the
@@ -119,7 +120,7 @@ public class PasswordService {
                 .findByResetPasswordToken(hashToken(request.token()))
                 .orElseThrow(() -> ValidationException.of("token", "is invalid"));
         if (user.getResetPasswordSentAt() == null
-                || user.getResetPasswordSentAt().plus(RESET_TOKEN_TTL).isBefore(Instant.now())) {
+                || user.getResetPasswordSentAt().plus(RESET_TOKEN_TTL).isBefore(clock.instant())) {
             throw ValidationException.of("token", "has expired");
         }
         user.setPasswordHash(passwordEncoder.encode(request.password()));

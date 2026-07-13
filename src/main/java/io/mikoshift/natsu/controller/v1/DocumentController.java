@@ -8,7 +8,7 @@ import io.mikoshift.natsu.dto.response.DocumentShowResponse;
 import io.mikoshift.natsu.entity.Document;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.NotFoundException;
-import io.mikoshift.natsu.service.ServerTimeService;
+import java.time.Clock;
 import io.mikoshift.natsu.service.documents.DocumentImportService;
 import io.mikoshift.natsu.service.documents.DocumentQueryService;
 import io.mikoshift.natsu.service.documents.DocumentSyncService;
@@ -47,7 +47,7 @@ public class DocumentController {
     private final DocumentImportService documentImportService;
     private final PackageUploadService packageUploadService;
     private final PackageStorageService packageStorageService;
-    private final ServerTimeService serverTimeService;
+    private final Clock clock;
 
     @GetMapping
     DocumentIndexResponse index(
@@ -59,7 +59,7 @@ public class DocumentController {
 
     @GetMapping("/search")
     DocumentSearchResponse search(@AuthenticationPrincipal User user, @RequestParam @NotBlank String q) {
-        return new DocumentSearchResponse(documentQueryService.search(user, q), serverTimeService.nowMs());
+        return new DocumentSearchResponse(documentQueryService.search(user, q), clock.millis());
     }
 
     @GetMapping("/{id}")
@@ -116,10 +116,10 @@ public class DocumentController {
 
     private DocumentIndexResponse toIndexResponse(List<Document> documents) {
         return new DocumentIndexResponse(
-                documents.stream().map(DocumentResponse::from).toList(), serverTimeService.nowMs());
+                documents.stream().map(DocumentResponse::from).toList(), clock.millis());
     }
 
     private DocumentShowResponse toShowResponse(Document document) {
-        return new DocumentShowResponse(DocumentResponse.from(document), serverTimeService.nowMs());
+        return new DocumentShowResponse(DocumentResponse.from(document), clock.millis());
     }
 }

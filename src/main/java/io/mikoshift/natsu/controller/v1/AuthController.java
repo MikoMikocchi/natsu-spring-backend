@@ -12,7 +12,7 @@ import io.mikoshift.natsu.entity.AuthToken;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.RateLimitExceededException;
 import io.mikoshift.natsu.security.RateLimiter;
-import io.mikoshift.natsu.service.ServerTimeService;
+import java.time.Clock;
 import io.mikoshift.natsu.service.auth.AccountDeletionService;
 import io.mikoshift.natsu.service.auth.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +36,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final AccountDeletionService accountDeletionService;
-    private final ServerTimeService serverTimeService;
+    private final Clock clock;
     private final RateLimiter rateLimiter;
     private final NatsuProperties natsuProperties;
 
@@ -72,7 +72,7 @@ public class AuthController {
 
     @GetMapping("/user")
     UserShowResponse currentUser(@AuthenticationPrincipal User user) {
-        return new UserShowResponse(UserResponse.from(user), serverTimeService.nowMs());
+        return new UserShowResponse(UserResponse.from(user), clock.millis());
     }
 
     @DeleteMapping("/account")
@@ -87,7 +87,7 @@ public class AuthController {
                 result.token().getAccessToken(),
                 result.token().getRefreshToken(),
                 UserResponse.from(result.user()),
-                serverTimeService.nowMs());
+                clock.millis());
     }
 
     private void checkRateLimit(String category, String key, NatsuProperties.RateLimit.Bucket config) {

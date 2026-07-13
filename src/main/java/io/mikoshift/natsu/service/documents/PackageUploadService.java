@@ -10,7 +10,7 @@ import io.mikoshift.natsu.service.storage.StoredPackage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -30,6 +30,7 @@ public class PackageUploadService {
     private final DocumentRepository documentRepository;
     private final StorageQuotaService storageQuotaService;
     private final PackageStorageService packageStorageService;
+    private final Clock clock;
 
     @Transactional
     public Document upload(User user, UUID documentId, MultipartFile file) {
@@ -46,7 +47,7 @@ public class PackageUploadService {
         validateZipHasManifest(content);
 
         StoredPackage stored = packageStorageService.store(documentId, content);
-        long nowMs = Instant.now().toEpochMilli();
+        long nowMs = clock.millis();
         document.setPackageSizeBytes(stored.sizeBytes());
         document.setPackageSha256(stored.sha256());
         document.setPackageUpdatedAtMs(nowMs);

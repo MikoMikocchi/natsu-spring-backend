@@ -9,6 +9,7 @@ import io.mikoshift.natsu.entity.AuthToken;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.NotFoundException;
 import io.mikoshift.natsu.repository.AuthTokenRepository;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +30,7 @@ class DeviceSessionServiceTest {
 
     @BeforeEach
     void setUp() {
-        deviceSessionService = new DeviceSessionService(authTokenRepository);
+        deviceSessionService = new DeviceSessionService(authTokenRepository, Clock.systemUTC());
         user = new User();
         user.setId(1L);
     }

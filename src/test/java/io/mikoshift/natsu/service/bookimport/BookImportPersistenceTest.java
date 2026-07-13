@@ -9,6 +9,7 @@ import io.mikoshift.natsu.repository.DocumentSearchTextRepository;
 import io.mikoshift.natsu.service.documents.StorageQuotaService;
 import io.mikoshift.natsu.service.storage.PackageStorageService;
 import io.mikoshift.natsu.service.storage.StoredPackage;
+import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +38,8 @@ class BookImportPersistenceTest {
     @BeforeEach
     void setUp() {
         persistence = new BookImportPersistence(
-                documentRepository, documentSearchTextRepository, storageQuotaService, packageStorageService);
+                documentRepository, documentSearchTextRepository, storageQuotaService, packageStorageService,
+                Clock.systemUTC());
     }
 
     @Test
