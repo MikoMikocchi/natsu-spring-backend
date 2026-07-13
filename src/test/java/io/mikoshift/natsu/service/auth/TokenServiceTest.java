@@ -88,6 +88,7 @@ class TokenServiceTest {
 
         assertThat(rotated.getPreviousRefreshToken()).isEqualTo("old-refresh");
         assertThat(rotated.getRefreshToken()).isNotEqualTo("old-refresh");
+        assertThat(rotated.getPreviousRefreshTokenExpiresAt()).isAfter(Instant.now());
         verify(authTokenRepository).save(current);
     }
 
@@ -110,6 +111,7 @@ class TokenServiceTest {
         AuthToken alreadyRotated = new AuthToken();
         alreadyRotated.setRefreshToken("new-refresh");
         alreadyRotated.setPreviousRefreshToken("stale-refresh");
+        alreadyRotated.setPreviousRefreshTokenExpiresAt(Instant.now().plus(10, ChronoUnit.SECONDS));
         alreadyRotated.setRefreshTokenExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
         when(authTokenRepository.findByRefreshTokenAndRevokedAtIsNull("stale-refresh"))
                 .thenReturn(Optional.empty());
@@ -120,6 +122,30 @@ class TokenServiceTest {
 
         assertThat(result).isSameAs(alreadyRotated);
         assertThat(result.getRefreshToken()).isEqualTo("new-refresh");
+    }
+
+    @Test
+    void rotateRevokesAllSessionsWhenThePreviousRefreshTokenIsReusedAfterTheGraceWindow() {
+        // Presenting the previous refresh token once its short grace window has elapsed can no
+        // longer be explained by a benign client retry racing the rotation; it signals the token
+        // was likely stolen and used ahead of its legitimate owner, so every session for the user
+        // is killed instead of silently handing back the current pair.
+        AuthToken alreadyRotated = new AuthToken();
+        alreadyRotated.setUser(user);
+        alreadyRotated.setRefreshToken("new-refresh");
+        alreadyRotated.setPreviousRefreshToken("stale-refresh");
+        alreadyRotated.setPreviousRefreshTokenExpiresAt(Instant.now().minus(1, ChronoUnit.SECONDS));
+        alreadyRotated.setRefreshTokenExpiresAt(Instant.now().plus(1, ChronoUnit.DAYS));
+        when(authTokenRepository.findByRefreshTokenAndRevokedAtIsNull("stale-refresh"))
+                .thenReturn(Optional.empty());
+        when(authTokenRepository.findByPreviousRefreshTokenAndRevokedAtIsNull("stale-refresh"))
+                .thenReturn(Optional.of(alreadyRotated));
+        when(authTokenRepository.findAllByUserAndRevokedAtIsNullOrderByCreatedAtDesc(user))
+                .thenReturn(List.of(alreadyRotated));
+
+        assertThatThrownBy(() -> tokenService.rotate("stale-refresh")).isInstanceOf(InvalidRefreshTokenException.class);
+
+        assertThat(alreadyRotated.getRevokedAt()).isNotNull();
     }
 
     @Test

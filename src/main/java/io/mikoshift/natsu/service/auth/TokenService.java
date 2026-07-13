@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TokenService {
 
     private static final Duration ACCESS_TOKEN_TTL = Duration.ofDays(30);
     private static final Duration REFRESH_TOKEN_TTL = Duration.ofDays(365);
+    private static final Duration REFRESH_TOKEN_GRACE_WINDOW = Duration.ofSeconds(30);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final AuthTokenRepository authTokenRepository;
@@ -49,9 +52,15 @@ public class TokenService {
 
     /**
      * Rotates the access/refresh pair for the session identified by {@code presentedRefreshToken}. If
-     * the presented token is the *previous* refresh token (a client retrying a request that raced a
-     * prior rotation), the already-rotated current pair is returned instead of rotating again,
-     * avoiding invalidating the client's now-current session.
+     * the presented token is the *previous* refresh token, presented within {@link
+     * #REFRESH_TOKEN_GRACE_WINDOW} of the rotation that superseded it, this is treated as a client
+     * retrying a request that raced that rotation: the already-rotated current pair is returned
+     * instead of rotating again, avoiding invalidating the client's now-current session.
+     *
+     * <p>Presenting the previous token *after* the grace window is refresh-token reuse: either the
+     * client waited far longer than any request retry would, or someone else obtained the token
+     * ahead of its legitimate holder. Since that can't be told apart from theft, every session for
+     * the user is revoked rather than silently handing out the current pair.
      */
     @Transactional
     public AuthToken rotate(String presentedRefreshToken) {
@@ -59,10 +68,17 @@ public class TokenService {
         if (current.isPresent()) {
             return doRotate(current.get());
         }
-        return authTokenRepository
+
+        AuthToken previous = authTokenRepository
                 .findByPreviousRefreshTokenAndRevokedAtIsNull(presentedRefreshToken)
-                .filter(token -> token.getRefreshTokenExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(InvalidRefreshTokenException::new);
+        if (previous.getPreviousRefreshTokenExpiresAt() == null
+                || previous.getPreviousRefreshTokenExpiresAt().isBefore(Instant.now())) {
+            log.warn("Refresh token reuse detected for user {}; revoking all sessions", previous.getUser().getId());
+            revokeAll(previous.getUser());
+            throw new InvalidRefreshTokenException();
+        }
+        return previous;
     }
 
     private AuthToken doRotate(AuthToken token) {
@@ -71,6 +87,7 @@ public class TokenService {
         }
         Instant now = Instant.now();
         token.setPreviousRefreshToken(token.getRefreshToken());
+        token.setPreviousRefreshTokenExpiresAt(now.plus(REFRESH_TOKEN_GRACE_WINDOW));
         token.setAccessToken(generateOpaqueToken());
         token.setRefreshToken(generateOpaqueToken());
         token.setAccessTokenExpiresAt(now.plus(ACCESS_TOKEN_TTL));

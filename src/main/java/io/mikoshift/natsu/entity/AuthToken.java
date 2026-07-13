@@ -44,6 +44,14 @@ public class AuthToken {
     @Column(name = "previous_refresh_token", unique = true)
     private String previousRefreshToken;
 
+    /**
+     * How long {@link #previousRefreshToken} stays honored after a rotation, to absorb a
+     * client retrying a request that raced the rotation. Presenting the previous token after
+     * this expires is treated as refresh-token reuse (likely theft), not a benign race.
+     */
+    @Column(name = "previous_refresh_token_expires_at")
+    private Instant previousRefreshTokenExpiresAt;
+
     @Column(name = "access_token_expires_at", nullable = false)
     private Instant accessTokenExpiresAt;
 
