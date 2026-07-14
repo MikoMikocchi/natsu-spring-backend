@@ -9,7 +9,9 @@ import io.mikoshift.natsu.security.oauth2.PublicClientAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -44,9 +46,16 @@ public class AuthorizationServerConfig {
             OAuth2AuthorizationConsentService authorizationConsentService,
             AuthorizationServerSettings authorizationServerSettings,
             OAuth2TokenGenerator<?> tokenGenerator,
-            PasswordGrantAuthenticationConverter passwordGrantAuthenticationConverter,
-            PasswordGrantAuthenticationProvider passwordGrantAuthenticationProvider)
+            @Lazy AuthenticationManager authenticationManager)
             throws Exception {
+        PasswordGrantAuthenticationConverter passwordGrantAuthenticationConverter =
+                new PasswordGrantAuthenticationConverter(registeredClientRepository);
+        PasswordGrantAuthenticationProvider passwordGrantAuthenticationProvider =
+                new PasswordGrantAuthenticationProvider(
+                        authenticationManager,
+                        authorizationService,
+                        tokenGenerator,
+                        registeredClientRepository);
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer();
 

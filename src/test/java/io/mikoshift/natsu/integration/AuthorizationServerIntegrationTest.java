@@ -16,8 +16,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
@@ -73,6 +73,7 @@ class AuthorizationServerIntegrationTest {
                 .andExpect(jsonPath("$.token_type").value("Bearer"))
                 .andExpect(jsonPath("$.expires_in").isNumber())
                 .andReturn();
+        SecurityContextHolder.clearContext();
 
         String accessToken = JsonPath.read(result.getResponse().getContentAsString(), "$.access_token");
         Jwt jwt = jwtDecoder.decode(accessToken);
@@ -86,7 +87,7 @@ class AuthorizationServerIntegrationTest {
         assertThat(jwtAuthenticationConverter.convert(jwt)).isNotNull();
         assertThat(jwtAuthenticationManager.authenticate(new BearerTokenAuthenticationToken(accessToken)))
                 .isNotNull();
-        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        SecurityContextHolder.clearContext();
 
         mockMvc.perform(get("/v1/auth/sessions").header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
@@ -109,6 +110,7 @@ class AuthorizationServerIntegrationTest {
                         .param("refresh_token", pair.refreshToken()))
                 .andExpect(status().isOk())
                 .andReturn();
+        SecurityContextHolder.clearContext();
         String body = refreshResult.getResponse().getContentAsString();
         String rotatedAccess = JsonPath.read(body, "$.access_token");
         String rotatedRefresh = JsonPath.read(body, "$.refresh_token");
@@ -130,13 +132,14 @@ class AuthorizationServerIntegrationTest {
     }
 
     @Test
-    void invalidCredentialsReturnUnauthorized() throws Exception {
+    void invalidCredentialsReturnBadRequest() throws Exception {
         mockMvc.perform(post("/oauth2/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "password")
                         .param("client_id", OAuth2TestSupport.CLIENT_ID)
                         .param("username", "nobody@example.com")
                         .param("password", "wrong"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("invalid_grant"));
     }
 }

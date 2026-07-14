@@ -1,11 +1,9 @@
 package io.mikoshift.natsu.config;
 
 import io.mikoshift.natsu.security.oauth2.NatsuJwtAuthenticationConverter;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationManagerResolver;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
@@ -26,11 +24,5 @@ public class JwtResourceServerConfig {
         JwtAuthenticationProvider provider = new JwtAuthenticationProvider(jwtDecoder);
         provider.setJwtAuthenticationConverter(jwtAuthenticationConverter::convert);
         return new ProviderManager(provider);
-    }
-
-    @Bean
-    AuthenticationManagerResolver<HttpServletRequest> jwtAuthenticationManagerResolver(
-            AuthenticationManager jwtAuthenticationManager) {
-        return request -> jwtAuthenticationManager;
     }
 }

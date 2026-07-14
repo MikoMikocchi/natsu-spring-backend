@@ -27,6 +27,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -119,7 +120,8 @@ class AuthFlowIntegrationTest {
                         .param("grant_type", "refresh_token")
                         .param("client_id", OAuth2TestSupport.CLIENT_ID)
                         .param("refresh_token", secondRefreshToken))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
+        SecurityContextHolder.clearContext();
 
         MvcResult refreshResult = mockMvc.perform(post("/oauth2/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -128,6 +130,7 @@ class AuthFlowIntegrationTest {
                         .param("refresh_token", firstRefreshToken))
                 .andExpect(status().isOk())
                 .andReturn();
+        SecurityContextHolder.clearContext();
         String refreshBody = refreshResult.getResponse().getContentAsString();
         String rotatedToken = JsonPath.read(refreshBody, "$.access_token");
         String rotatedRefreshToken = JsonPath.read(refreshBody, "$.refresh_token");
@@ -144,6 +147,7 @@ class AuthFlowIntegrationTest {
                         .param("token", rotatedRefreshToken)
                         .param("token_type_hint", "refresh_token"))
                 .andExpect(status().isOk());
+        SecurityContextHolder.clearContext();
         mockMvc.perform(get("/userinfo").header("Authorization", "Bearer " + rotatedToken))
                 .andExpect(status().isUnauthorized());
     }
@@ -272,7 +276,8 @@ class AuthFlowIntegrationTest {
                         .param("client_id", OAuth2TestSupport.CLIENT_ID)
                         .param("username", email)
                         .param("password", "password123"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("invalid_grant"));
 
         mockMvc.perform(post("/oauth2/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)

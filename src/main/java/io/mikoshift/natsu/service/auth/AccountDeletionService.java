@@ -5,6 +5,7 @@ import io.mikoshift.natsu.exception.InvalidCredentialsException;
 import io.mikoshift.natsu.repository.DocumentRepository;
 import io.mikoshift.natsu.repository.UserRepository;
 import io.mikoshift.natsu.service.storage.PackageStorageService;
+import io.mikoshift.natsu.security.oauth2.OAuth2AuthorizationSupport;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class AccountDeletionService {
     private final DocumentRepository documentRepository;
     private final PackageStorageService packageStorageService;
     private final PasswordEncoder passwordEncoder;
+    private final OAuth2AuthorizationSupport authorizationSupport;
 
     @Transactional
     public void deleteAccount(User user, String password) {
@@ -38,6 +40,7 @@ public class AccountDeletionService {
             throw new InvalidCredentialsException();
         }
         List<UUID> documentIds = documentRepository.findIdsByUser(user);
+        authorizationSupport.revokeAllForUser(user);
         userRepository.delete(user);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

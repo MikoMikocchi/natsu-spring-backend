@@ -2,7 +2,6 @@ package io.mikoshift.natsu.config;
 
 import io.mikoshift.natsu.security.RateLimitFilter;
 import io.mikoshift.natsu.security.RestAuthenticationEntryPoint;
-import io.mikoshift.natsu.security.oauth2.ClearContextBeforeBearerJwtFilter;
 import io.mikoshift.natsu.security.oauth2.NatsuJwtAuthenticationConverter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +15,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -39,8 +39,8 @@ public class SecurityConfig {
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final NatsuProperties natsuProperties;
     private final JwtDecoder jwtDecoder;
+    private final BearerTokenResolver bearerTokenResolver;
     private final NatsuJwtAuthenticationConverter natsuJwtAuthenticationConverter;
-    private final ClearContextBeforeBearerJwtFilter clearContextBeforeBearerJwtFilter;
 
     @Bean
     @Order(2)
@@ -56,11 +56,11 @@ public class SecurityConfig {
                         .anyRequest()
                         .authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
+                        .bearerTokenResolver(bearerTokenResolver)
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
                         .jwt(jwt -> jwt.decoder(jwtDecoder)
                                 .jwtAuthenticationConverter(natsuJwtAuthenticationConverter::convert)))
                 .exceptionHandling(eh -> eh.authenticationEntryPoint(restAuthenticationEntryPoint))
-                .addFilterBefore(clearContextBeforeBearerJwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

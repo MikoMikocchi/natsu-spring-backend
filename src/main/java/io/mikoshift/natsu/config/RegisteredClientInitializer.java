@@ -37,7 +37,6 @@ public class RegisteredClientInitializer implements ApplicationRunner {
                 .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
                 .authorizationGrantType(NatsuAuthorizationGrantTypes.PASSWORD)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .scope("openid")
                 .scope("profile")
                 .clientSettings(ClientSettings.builder()
                         .requireAuthorizationConsent(false)

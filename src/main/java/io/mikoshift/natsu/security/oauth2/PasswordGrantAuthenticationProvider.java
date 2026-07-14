@@ -1,6 +1,7 @@
 package io.mikoshift.natsu.security.oauth2;
 
 import io.mikoshift.natsu.security.NatsuUserDetails;
+import java.security.Principal;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -28,9 +29,6 @@ import org.springframework.security.oauth2.server.authorization.context.Authoriz
 import org.springframework.security.oauth2.server.authorization.token.DefaultOAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
-import org.springframework.stereotype.Component;
-
-@Component
 public class PasswordGrantAuthenticationProvider implements org.springframework.security.authentication.AuthenticationProvider {
 
     private final AuthenticationManager authenticationManager;
@@ -73,11 +71,17 @@ public class PasswordGrantAuthenticationProvider implements org.springframework.
 
         Set<String> authorizedScopes = new LinkedHashSet<>(registeredClient.getScopes());
 
+        Authentication principalForStorage = UsernamePasswordAuthenticationToken.authenticated(
+                userDetails(userAuthentication).getUsername(),
+                null,
+                userAuthentication.getAuthorities());
+
         OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
                 .id(UUID.randomUUID().toString())
                 .principalName(userDetails(userAuthentication).getUsername())
                 .authorizationGrantType(NatsuAuthorizationGrantTypes.PASSWORD)
                 .authorizedScopes(authorizedScopes)
+                .attribute(Principal.class.getName(), principalForStorage)
                 .attribute(NatsuOAuth2Claims.DEVICE_NAME, passwordGrant.getDeviceName());
 
         OAuth2Authorization preliminaryAuthorization = authorizationBuilder.build();

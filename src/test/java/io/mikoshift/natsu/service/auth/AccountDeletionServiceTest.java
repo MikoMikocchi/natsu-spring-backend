@@ -9,6 +9,7 @@ import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.InvalidCredentialsException;
 import io.mikoshift.natsu.repository.DocumentRepository;
 import io.mikoshift.natsu.repository.UserRepository;
+import io.mikoshift.natsu.security.oauth2.OAuth2AuthorizationSupport;
 import io.mikoshift.natsu.service.storage.PackageStorageService;
 import java.util.List;
 import java.util.UUID;
@@ -36,13 +37,16 @@ class AccountDeletionServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private OAuth2AuthorizationSupport authorizationSupport;
+
     private AccountDeletionService accountDeletionService;
     private User user;
 
     @BeforeEach
     void setUp() {
-        accountDeletionService =
-                new AccountDeletionService(userRepository, documentRepository, packageStorageService, passwordEncoder);
+        accountDeletionService = new AccountDeletionService(
+                userRepository, documentRepository, packageStorageService, passwordEncoder, authorizationSupport);
         user = new User();
         user.setId(1L);
         user.setPasswordHash("hashed");
@@ -75,6 +79,7 @@ class AccountDeletionServiceTest {
         TransactionSynchronizationManager.initSynchronization();
         try {
             accountDeletionService.deleteAccount(user, "password123");
+            verify(authorizationSupport).revokeAllForUser(user);
             verify(userRepository).delete(user);
             // File cleanup is deferred until the DB transaction actually commits.
             verify(packageStorageService, never()).delete(documentA);

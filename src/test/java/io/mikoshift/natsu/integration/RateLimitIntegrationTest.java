@@ -50,7 +50,7 @@ class RateLimitIntegrationTest {
                             .param("client_id", OAuth2TestSupport.CLIENT_ID)
                             .param("username", email)
                             .param("password", "wrong-password"))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isBadRequest());
         }
 
         mockMvc.perform(post("/oauth2/token")
@@ -69,7 +69,7 @@ class RateLimitIntegrationTest {
                         .param("client_id", OAuth2TestSupport.CLIENT_ID)
                         .param("username", "someone-else@example.com")
                         .param("password", "wrong-password"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
 
         mockMvc.perform(post("/oauth2/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -77,7 +77,7 @@ class RateLimitIntegrationTest {
                         .param("client_id", OAuth2TestSupport.CLIENT_ID)
                         .param("username", "yet-another@example.com")
                         .param("password", "wrong-password"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
 
         mockMvc.perform(post("/oauth2/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -152,13 +152,13 @@ class RateLimitIntegrationTest {
                         .param("grant_type", "refresh_token")
                         .param("client_id", OAuth2TestSupport.CLIENT_ID)
                         .param("refresh_token", repeatedToken))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
         mockMvc.perform(post("/oauth2/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "refresh_token")
                         .param("client_id", OAuth2TestSupport.CLIENT_ID)
                         .param("refresh_token", repeatedToken))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
         mockMvc.perform(post("/oauth2/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("grant_type", "refresh_token")
@@ -173,7 +173,7 @@ class RateLimitIntegrationTest {
                         .param("grant_type", "refresh_token")
                         .param("client_id", OAuth2TestSupport.CLIENT_ID)
                         .param("refresh_token", "bogus-refresh-token-distinct-1"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
 
         mockMvc.perform(post("/oauth2/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)

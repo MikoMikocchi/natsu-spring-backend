@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.stereotype.Service;
@@ -16,8 +18,32 @@ public class OAuth2AuthorizationSupport {
     private final OAuth2AuthorizationService authorizationService;
     private final JdbcTemplate jdbcTemplate;
 
-    public boolean isActive(String authorizationId) {
-        return authorizationService.findById(authorizationId) != null;
+    public boolean isActive(String authorizationId, String accessTokenValue) {
+        OAuth2Authorization authorization = authorizationService.findById(authorizationId);
+        if (authorization == null) {
+            return false;
+        }
+        // Spring AS marks tokens as invalidated in-place (saves the record with updated metadata)
+        // rather than deleting the row, so we must check each token's active state explicitly.
+        //
+        // Revoking a refresh token via /oauth2/revoke does NOT invalidate the access token record —
+        // only the refresh token entry is marked. We therefore treat the whole session as dead if
+        // either the access token or the refresh token has been invalidated or expired.
+        //
+        // After refresh-token rotation the authorization id (sid) stays the same but the stored
+        // access token value changes; reject JWTs that no longer match the current access token.
+        OAuth2Authorization.Token<OAuth2AccessToken> accessToken = authorization.getAccessToken();
+        if (accessToken == null || accessToken.isInvalidated() || accessToken.isExpired()) {
+            return false;
+        }
+        if (!accessToken.getToken().getTokenValue().equals(accessTokenValue)) {
+            return false;
+        }
+        OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken = authorization.getRefreshToken();
+        if (refreshToken != null && (refreshToken.isInvalidated() || refreshToken.isExpired())) {
+            return false;
+        }
+        return true;
     }
 
     public List<AuthorizationSession> findActiveSessionsForUser(User user) {
