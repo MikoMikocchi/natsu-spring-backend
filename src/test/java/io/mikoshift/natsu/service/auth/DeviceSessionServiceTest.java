@@ -2,92 +2,132 @@ package io.mikoshift.natsu.service.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.mikoshift.natsu.dto.response.DeviceSessionResponse;
-import io.mikoshift.natsu.entity.AuthToken;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.NotFoundException;
-import io.mikoshift.natsu.repository.AuthTokenRepository;
-import java.time.Clock;
+import io.mikoshift.natsu.security.oauth2.NatsuOAuth2Claims;
+import io.mikoshift.natsu.security.oauth2.OAuth2AuthorizationSupport;
+import io.mikoshift.natsu.security.oauth2.OAuth2AuthorizationSupport.AuthorizationSession;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 
 @ExtendWith(MockitoExtension.class)
 class DeviceSessionServiceTest {
 
     @Mock
-    private AuthTokenRepository authTokenRepository;
+    private OAuth2AuthorizationSupport authorizationSupport;
+
+    @Mock
+    private OAuth2AuthorizationService authorizationService;
 
     private DeviceSessionService deviceSessionService;
     private User user;
 
     @BeforeEach
     void setUp() {
-        deviceSessionService = new DeviceSessionService(authTokenRepository, Clock.systemUTC());
+        deviceSessionService = new DeviceSessionService(authorizationSupport, authorizationService);
         user = new User();
         user.setId(1L);
+        user.setEmail("reader@example.com");
     }
 
     @Test
-    void listMarksOnlyTheCurrentTokenAsCurrent() {
-        AuthToken currentToken = new AuthToken();
-        currentToken.setId(1L);
-        currentToken.setName("This iPhone");
-        currentToken.setCreatedAt(Instant.now());
+    void listMarksOnlyTheCurrentAuthorizationAsCurrent() {
+        AuthorizationSession current = new AuthorizationSession("auth-1", user.getEmail(), Instant.now());
+        AuthorizationSession other = new AuthorizationSession("auth-2", user.getEmail(), Instant.now().minusSeconds(3600));
+        when(authorizationSupport.findActiveSessionsForUser(user)).thenReturn(List.of(current, other));
 
-        AuthToken otherToken = new AuthToken();
-        otherToken.setId(2L);
-        otherToken.setName("Old iPad");
-        otherToken.setCreatedAt(Instant.now().minusSeconds(3600));
+        OAuth2Authorization currentAuthorization = OAuth2Authorization.withRegisteredClient(
+                        org.springframework.security.oauth2.server.authorization.client.RegisteredClient.withId("id")
+                                .clientId("natsu-mobile")
+                                .clientName("test")
+                                .clientAuthenticationMethod(
+                                        org.springframework.security.oauth2.core.ClientAuthenticationMethod.NONE)
+                                .authorizationGrantType(
+                                        org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
+                                .build())
+                .id("auth-1")
+                .principalName(user.getEmail())
+                .authorizationGrantType(
+                        org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
+                .attribute(NatsuOAuth2Claims.DEVICE_NAME, "This iPhone")
+                .build();
+        OAuth2Authorization otherAuthorization = OAuth2Authorization.withRegisteredClient(
+                        org.springframework.security.oauth2.server.authorization.client.RegisteredClient.withId("id2")
+                                .clientId("natsu-mobile")
+                                .clientName("test")
+                                .clientAuthenticationMethod(
+                                        org.springframework.security.oauth2.core.ClientAuthenticationMethod.NONE)
+                                .authorizationGrantType(
+                                        org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
+                                .build())
+                .id("auth-2")
+                .principalName(user.getEmail())
+                .authorizationGrantType(
+                        org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
+                .attribute(NatsuOAuth2Claims.DEVICE_NAME, "Old iPad")
+                .build();
+        when(authorizationService.findById("auth-1")).thenReturn(currentAuthorization);
+        when(authorizationService.findById("auth-2")).thenReturn(otherAuthorization);
 
-        when(authTokenRepository.findAllByUserAndRevokedAtIsNullOrderByCreatedAtDesc(user))
-                .thenReturn(List.of(currentToken, otherToken));
-
-        List<DeviceSessionResponse> sessions = deviceSessionService.list(user, currentToken);
+        List<DeviceSessionResponse> sessions = deviceSessionService.list(user, "auth-1");
 
         assertThat(sessions).hasSize(2);
-        DeviceSessionResponse currentResponse =
-                sessions.stream().filter(s -> s.id().equals(1L)).findFirst().orElseThrow();
-        DeviceSessionResponse otherResponse =
-                sessions.stream().filter(s -> s.id().equals(2L)).findFirst().orElseThrow();
-        assertThat(currentResponse.current()).isTrue();
-        assertThat(otherResponse.current()).isFalse();
+        assertThat(sessions.stream().filter(DeviceSessionResponse::current).count()).isEqualTo(1);
+        assertThat(sessions.stream()
+                        .filter(DeviceSessionResponse::current)
+                        .findFirst()
+                        .orElseThrow()
+                        .id())
+                .isEqualTo("auth-1");
     }
 
     @Test
     void listReturnsEmptyWhenTheUserHasNoActiveSessions() {
-        AuthToken currentToken = new AuthToken();
-        currentToken.setId(1L);
-        when(authTokenRepository.findAllByUserAndRevokedAtIsNullOrderByCreatedAtDesc(user))
-                .thenReturn(List.of());
+        when(authorizationSupport.findActiveSessionsForUser(user)).thenReturn(List.of());
 
-        List<DeviceSessionResponse> sessions = deviceSessionService.list(user, currentToken);
+        List<DeviceSessionResponse> sessions = deviceSessionService.list(user, "auth-1");
 
         assertThat(sessions).isEmpty();
     }
 
     @Test
-    void revokeStampsRevokedAtOnTheOwnedToken() {
-        AuthToken token = new AuthToken();
-        token.setId(5L);
-        when(authTokenRepository.findByIdAndUser(5L, user)).thenReturn(Optional.of(token));
+    void revokeRemovesTheOwnedAuthorization() {
+        OAuth2Authorization authorization = OAuth2Authorization.withRegisteredClient(
+                        org.springframework.security.oauth2.server.authorization.client.RegisteredClient.withId("id")
+                                .clientId("natsu-mobile")
+                                .clientName("test")
+                                .clientAuthenticationMethod(
+                                        org.springframework.security.oauth2.core.ClientAuthenticationMethod.NONE)
+                                .authorizationGrantType(
+                                        org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
+                                .build())
+                .id("auth-5")
+                .principalName(user.getEmail())
+                .authorizationGrantType(
+                        org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
+                .build();
+        when(authorizationService.findById("auth-5")).thenReturn(authorization);
 
-        deviceSessionService.revoke(user, 5L);
+        deviceSessionService.revoke(user, "auth-5");
 
-        assertThat(token.getRevokedAt()).isNotNull();
+        verify(authorizationService).remove(authorization);
     }
 
     @Test
-    void revokeThrowsWhenTheTokenDoesNotBelongToTheUser() {
-        when(authTokenRepository.findByIdAndUser(99L, user)).thenReturn(Optional.empty());
+    void revokeThrowsWhenTheAuthorizationDoesNotBelongToTheUser() {
+        when(authorizationService.findById("auth-99")).thenReturn(null);
 
-        assertThatThrownBy(() -> deviceSessionService.revoke(user, 99L)).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> deviceSessionService.revoke(user, "auth-99")).isInstanceOf(NotFoundException.class);
     }
 }

@@ -32,10 +32,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
-// All integration tests share one cached Spring context, so they also share one RateLimiter
-// instance and its bucket state -- without this override, auth calls from earlier test classes
-// in the same run would eat into this class's rate limit budget.
 @TestPropertySource(
         properties = {
             "natsu.rate-limit.login.capacity=1000000",
@@ -72,8 +70,7 @@ class AuthFlowIntegrationTest {
     void registerLoginUseTokenListSessionsRevokeRefreshLogout() throws Exception {
         String email = "reader@example.com";
 
-        // Register creates a user + first device session and returns a usable token pair.
-        String registerResponse = mockMvc.perform(post("/v1/auth/register")
+        mockMvc.perform(post("/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("User-Agent", "device-a")
                         .content("""
@@ -81,42 +78,26 @@ class AuthFlowIntegrationTest {
                                 """.formatted(email)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.user.email").value(email))
-                .andExpect(jsonPath("$.token").exists())
-                .andExpect(jsonPath("$.refresh_token").exists())
-                .andExpect(jsonPath("$.server_time_ms").exists())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        String firstToken = JsonPath.read(registerResponse, "$.token");
+                .andExpect(jsonPath("$.server_time_ms").exists());
 
-        // Logging in from a second "device" issues an independent session.
-        String loginResponse = mockMvc.perform(post("/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("User-Agent", "device-b")
-                        .content("""
-                                {"email":"%s","password":"password123"}
-                                """.formatted(email)))
+        OAuth2TestSupport.TokenPair firstPair = OAuth2TestSupport.login(mockMvc, email, "password123", "device-a");
+        String firstToken = firstPair.accessToken();
+        String firstRefreshToken = firstPair.refreshToken();
+
+        OAuth2TestSupport.TokenPair secondPair = OAuth2TestSupport.login(mockMvc, email, "password123", "device-b");
+        String secondToken = secondPair.accessToken();
+        String secondRefreshToken = secondPair.refreshToken();
+
+        mockMvc.perform(get("/userinfo").header("Authorization", "Bearer " + firstToken))
                 .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        String secondToken = JsonPath.read(loginResponse, "$.token");
-        String secondRefreshToken = JsonPath.read(loginResponse, "$.refresh_token");
+                .andExpect(jsonPath("$.email").value(email));
 
-        // A valid bearer token can fetch the current user.
-        mockMvc.perform(get("/v1/auth/user").header("Authorization", "Bearer " + firstToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.user.email").value(email));
-
-        // Missing/invalid tokens are rejected with the API's standard error shape.
-        mockMvc.perform(get("/v1/auth/user"))
+        mockMvc.perform(get("/userinfo"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errors.base").exists());
-        mockMvc.perform(get("/v1/auth/user").header("Authorization", "Bearer garbage"))
+        mockMvc.perform(get("/userinfo").header("Authorization", "Bearer garbage"))
                 .andExpect(status().isUnauthorized());
 
-        // Two device sessions are listed, each correctly flagged as "current" relative to its own
-        // token.
         String sessionsAsDeviceA = mockMvc.perform(
                         get("/v1/auth/sessions").header("Authorization", "Bearer " + firstToken))
                 .andExpect(status().isOk())
@@ -124,49 +105,46 @@ class AuthFlowIntegrationTest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-        List<Integer> deviceBSessionIds = JsonPath.read(sessionsAsDeviceA, "$[?(@.name == 'device-b')].id");
+        List<String> deviceBSessionIds = JsonPath.read(sessionsAsDeviceA, "$[?(@.name == 'device-b')].id");
         assertThat(deviceBSessionIds).hasSize(1);
-        Integer deviceBSessionId = deviceBSessionIds.get(0);
+        String deviceBSessionId = deviceBSessionIds.get(0);
 
-        // Revoking device-b's session immediately invalidates its access token.
         mockMvc.perform(delete("/v1/auth/sessions/" + deviceBSessionId).header("Authorization", "Bearer " + firstToken))
                 .andExpect(status().isNoContent());
-        mockMvc.perform(get("/v1/auth/user").header("Authorization", "Bearer " + secondToken))
+        mockMvc.perform(get("/userinfo").header("Authorization", "Bearer " + secondToken))
                 .andExpect(status().isUnauthorized());
 
-        // A revoked session's refresh token can no longer be exchanged either.
-        mockMvc.perform(post("/v1/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"refresh_token":"%s"}
-                                """.formatted(secondRefreshToken)))
+        mockMvc.perform(post("/oauth2/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "refresh_token")
+                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
+                        .param("refresh_token", secondRefreshToken))
                 .andExpect(status().isUnauthorized());
 
-        // Refreshing device-a's still-active session rotates it to a new access/refresh pair.
-        String firstRefreshToken = JsonPath.read(registerResponse, "$.refresh_token");
-        String refreshResponse = mockMvc.perform(post("/v1/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"refresh_token":"%s"}
-                                """.formatted(firstRefreshToken)))
+        MvcResult refreshResult = mockMvc.perform(post("/oauth2/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "refresh_token")
+                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
+                        .param("refresh_token", firstRefreshToken))
                 .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        String rotatedToken = JsonPath.read(refreshResponse, "$.token");
+                .andReturn();
+        String refreshBody = refreshResult.getResponse().getContentAsString();
+        String rotatedToken = JsonPath.read(refreshBody, "$.access_token");
+        String rotatedRefreshToken = JsonPath.read(refreshBody, "$.refresh_token");
         assertThat(rotatedToken).isNotEqualTo(firstToken);
 
-        // The old access token issued before rotation is now dead...
-        mockMvc.perform(get("/v1/auth/user").header("Authorization", "Bearer " + firstToken))
+        mockMvc.perform(get("/userinfo").header("Authorization", "Bearer " + firstToken))
                 .andExpect(status().isUnauthorized());
-        // ...while the newly rotated one works.
-        mockMvc.perform(get("/v1/auth/user").header("Authorization", "Bearer " + rotatedToken))
+        mockMvc.perform(get("/userinfo").header("Authorization", "Bearer " + rotatedToken))
                 .andExpect(status().isOk());
 
-        // Logout revokes the session tied to the presented token.
-        mockMvc.perform(post("/v1/auth/logout").header("Authorization", "Bearer " + rotatedToken))
-                .andExpect(status().isNoContent());
-        mockMvc.perform(get("/v1/auth/user").header("Authorization", "Bearer " + rotatedToken))
+        mockMvc.perform(post("/oauth2/revoke")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
+                        .param("token", rotatedRefreshToken)
+                        .param("token_type_hint", "refresh_token"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/userinfo").header("Authorization", "Bearer " + rotatedToken))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -198,16 +176,9 @@ class AuthFlowIntegrationTest {
 
     @Test
     void deleteAccountRequiresCorrectPassword() throws Exception {
-        String response = mockMvc.perform(post("/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"name":"Del","email":"delete-me@example.com","password":"password123","password_confirmation":"password123"}
-                                """))
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        String token = JsonPath.read(response, "$.token");
+        String email = "delete-me@example.com";
+        OAuth2TestSupport.register(mockMvc, email);
+        String token = OAuth2TestSupport.obtainAccessToken(mockMvc, email, "password123");
 
         mockMvc.perform(delete("/v1/auth/account")
                         .header("Authorization", "Bearer " + token)
@@ -225,22 +196,15 @@ class AuthFlowIntegrationTest {
                                 """))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/v1/auth/user").header("Authorization", "Bearer " + token))
+        mockMvc.perform(get("/userinfo").header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void deletingAccountAlsoRemovesPackageFilesFromDisk() throws Exception {
-        String response = mockMvc.perform(post("/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"name":"Purge","email":"purge-me@example.com","password":"password123","password_confirmation":"password123"}
-                                """))
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        String token = JsonPath.read(response, "$.token");
+        String email = "purge-me@example.com";
+        OAuth2TestSupport.register(mockMvc, email);
+        String token = OAuth2TestSupport.obtainAccessToken(mockMvc, email, "password123");
 
         String documentId = UUID.randomUUID().toString();
         mockMvc.perform(post("/v1/documents/sync")
@@ -290,16 +254,9 @@ class AuthFlowIntegrationTest {
 
     @Test
     void changedPasswordActuallyPersistsAndOldPasswordStopsWorking() throws Exception {
-        String response = mockMvc.perform(post("/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"name":"Changer","email":"change-password@example.com","password":"password123","password_confirmation":"password123"}
-                                """))
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        String token = JsonPath.read(response, "$.token");
+        String email = "change-password@example.com";
+        OAuth2TestSupport.register(mockMvc, email);
+        String token = OAuth2TestSupport.obtainAccessToken(mockMvc, email, "password123");
 
         mockMvc.perform(patch("/v1/auth/password")
                         .header("Authorization", "Bearer " + token)
@@ -309,18 +266,20 @@ class AuthFlowIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"email":"change-password@example.com","password":"password123"}
-                                """))
+        mockMvc.perform(post("/oauth2/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "password")
+                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
+                        .param("username", email)
+                        .param("password", "password123"))
                 .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post("/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"email":"change-password@example.com","password":"newpassword456"}
-                                """))
+        mockMvc.perform(post("/oauth2/token")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("grant_type", "password")
+                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
+                        .param("username", email)
+                        .param("password", "newpassword456"))
                 .andExpect(status().isOk());
     }
 }

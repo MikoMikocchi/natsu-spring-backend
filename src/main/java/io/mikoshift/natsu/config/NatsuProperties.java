@@ -25,13 +25,9 @@ public record NatsuProperties(
         String passwordResetUrlTemplate,
         // "From" address for outgoing mail. Override via NATSU_MAIL_FROM in any real deployment.
         String mailFrom,
-        /**
-         * Security-token lifetimes (opaque bearer access/refresh tokens and password-reset tokens).
-         * Keep access short so clients call {@code /refresh} regularly -- rotation and reuse
-         * detection only run there, limiting exposure from a stolen access token. Revocation is
-         * checked on every request, so a short access TTL does not weaken immediate session kill.
-         */
+        /** JWT access/refresh lifetimes and password-reset token TTL. */
         Auth auth,
+        OAuth2 oauth2,
         BookImportRecovery bookImportRecovery,
         DictionaryCache dictionaryCache,
         BookImportExecutor bookImportExecutor) {
@@ -81,11 +77,12 @@ public record NatsuProperties(
     /** Thread pool for {@code @Async} book import tasks ({@code bookImportExecutor}). */
     public record BookImportExecutor(int corePoolSize, int maxPoolSize, int queueCapacity) {}
 
-    public record Auth(
-            Duration accessTokenTtl,
-            Duration refreshTokenTtl,
-            Duration refreshTokenGraceWindow,
-            Duration resetTokenTtl) {}
+    public record Auth(Duration accessTokenTtl, Duration refreshTokenTtl, Duration resetTokenTtl) {}
+
+    public record OAuth2(String issuer, String clientId, Jwt jwt) {
+
+        public record Jwt(String privateKey, String publicKey) {}
+    }
 
     /**
      * Governs the job that finds {@code Document}s stuck in {@code PENDING} (e.g. the app crashed or

@@ -67,15 +67,7 @@ class BookImportIntegrationTest {
     }
 
     private String registerAndGetToken(String email) throws Exception {
-        String response = mockMvc.perform(post("/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"name":"Reader","email":"%s","password":"password123","password_confirmation":"password123"}
-                                """.formatted(email)))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        return JsonPath.read(response, "$.token");
+        return OAuth2TestSupport.registerAndLogin(mockMvc, email).accessToken();
     }
 
     private String awaitStatus(String token, String documentId) throws Exception {

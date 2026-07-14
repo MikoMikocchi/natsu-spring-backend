@@ -6,6 +6,7 @@ import io.mikoshift.natsu.dto.request.ResetPasswordRequest;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.ValidationException;
 import io.mikoshift.natsu.repository.UserRepository;
+import io.mikoshift.natsu.security.oauth2.OAuth2AuthorizationSupport;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -33,7 +34,7 @@ public class PasswordService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final TokenService tokenService;
+    private final OAuth2AuthorizationSupport authorizationSupport;
     private final JavaMailSender mailSender;
     private final NatsuProperties properties;
     private final Clock clock;
@@ -126,7 +127,7 @@ public class PasswordService {
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setResetPasswordToken(null);
         user.setResetPasswordSentAt(null);
-        tokenService.revokeAll(user);
+        authorizationSupport.revokeAllForUser(user);
     }
 
     private static String generateToken() {

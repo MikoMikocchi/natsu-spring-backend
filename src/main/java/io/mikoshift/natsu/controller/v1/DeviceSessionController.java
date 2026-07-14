@@ -1,7 +1,6 @@
 package io.mikoshift.natsu.controller.v1;
 
 import io.mikoshift.natsu.dto.response.DeviceSessionResponse;
-import io.mikoshift.natsu.entity.AuthToken;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.service.auth.DeviceSessionService;
 import java.util.List;
@@ -24,12 +23,19 @@ public class DeviceSessionController {
 
     @GetMapping
     List<DeviceSessionResponse> list(@AuthenticationPrincipal User user, Authentication authentication) {
-        return deviceSessionService.list(user, (AuthToken) authentication.getCredentials());
+        return deviceSessionService.list(user, currentAuthorizationId(authentication));
     }
 
     @DeleteMapping("/{id}")
-    ResponseEntity<Void> revoke(@AuthenticationPrincipal User user, @PathVariable Long id) {
+    ResponseEntity<Void> revoke(@AuthenticationPrincipal User user, @PathVariable String id) {
         deviceSessionService.revoke(user, id);
         return ResponseEntity.noContent().build();
+    }
+
+    private static String currentAuthorizationId(Authentication authentication) {
+        if (authentication.getDetails() instanceof String sid) {
+            return sid;
+        }
+        return null;
     }
 }

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.databind.ObjectMapper;
@@ -29,11 +30,9 @@ import tools.jackson.databind.ObjectMapper;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final Map<String, String> LIMITED_PATHS = Map.of(
-            "/v1/auth/login", "login",
             "/v1/auth/register", "register",
             "/v1/auth/password/forgot", "password-reset",
-            "/v1/auth/password/reset", "password-reset",
-            "/v1/auth/refresh", "refresh");
+            "/v1/auth/password/reset", "password-reset");
 
     private final ObjectMapper objectMapper;
     private final NatsuProperties properties;
@@ -43,8 +42,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String category =
-                "POST".equalsIgnoreCase(request.getMethod()) ? LIMITED_PATHS.get(request.getRequestURI()) : null;
+        String category = resolveCategory(request);
         if (category != null) {
             NatsuProperties.RateLimit.Bucket config = bucketConfig(category);
             if (!rateLimiter.tryConsume(category + "-ip", clientIpResolver.resolve(request), config)) {
@@ -53,6 +51,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private static String resolveCategory(HttpServletRequest request) {
+        if (!"POST".equalsIgnoreCase(request.getMethod())) {
+            return null;
+        }
+        if ("/oauth2/token".equals(request.getRequestURI())) {
+            String grantType = request.getParameter(OAuth2ParameterNames.GRANT_TYPE);
+            if (OAuth2ParameterNames.REFRESH_TOKEN.equals(grantType)) {
+                return "refresh";
+            }
+            return "login";
+        }
+        return LIMITED_PATHS.get(request.getRequestURI());
     }
 
     private NatsuProperties.RateLimit.Bucket bucketConfig(String category) {

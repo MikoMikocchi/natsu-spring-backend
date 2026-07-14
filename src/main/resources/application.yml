@@ -60,8 +60,14 @@ natsu:
   auth:
     access-token-ttl: 1h
     refresh-token-ttl: 365d
-    refresh-token-grace-window: 30s
     reset-token-ttl: 2h
+  oauth2:
+    issuer: ${NATSU_OAUTH2_ISSUER:http://localhost:3000}
+    client-id: natsu-mobile
+    jwt:
+      # PEM-encoded RSA keys (PKCS#8 private, X.509 public). Leave empty to auto-generate at startup (dev only).
+      private-key: ${NATSU_OAUTH2_JWT_PRIVATE_KEY:}
+      public-key: ${NATSU_OAUTH2_JWT_PUBLIC_KEY:}
   # Per-endpoint, per-dimension throttles (Bucket4j buckets, keyed and enforced in RateLimitFilter
   # and the auth/password controllers). Numbers mirror the sibling Rails backend's Rack::Attack config.
   rate-limit:
