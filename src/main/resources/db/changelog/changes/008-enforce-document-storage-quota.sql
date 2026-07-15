@@ -7,6 +7,7 @@ create table natsu_config (
     value bigint       not null
 );
 
+-- Bootstrap default only; NatsuConfigSyncRunner overwrites this from application config on startup.
 insert into natsu_config (key, value)
 values ('max_storage_bytes_per_user', 524288000);
 

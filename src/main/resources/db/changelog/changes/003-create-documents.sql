@@ -2,7 +2,7 @@
 
 -- changeset natsu:003-create-documents
 create table documents (
-    id                              uuid           primary key default gen_random_uuid(),
+    id                              uuid           primary key,
     user_id                         bigint         not null references users (id) on delete cascade,
     title                           varchar(500)   not null default '',
     source_format                   varchar(16)    not null,

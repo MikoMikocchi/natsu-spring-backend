@@ -1,3 +1,5 @@
+# Baseline schema for fresh databases. If a database already has this schema from Flyway,
+# baseline Liquibase once (mark these changesets as applied) before starting the app.
 databaseChangeLog:
   - include:
       file: changes/001-create-users.sql

@@ -26,17 +26,23 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
      * Matches against title and/or the extracted body text populated once a package has been
      * processed. The body text lives in {@code document_search_text}, a separate table (see
      * {@link io.mikoshift.natsu.entity.DocumentSearchText}) so that it never rides along with
-     * ordinary document reads -- only this query touches it, via an explicit left join since the
-     * two entities aren't otherwise associated. Left (not inner) so documents that haven't
-     * finished importing yet -- and so have no search-text row -- still match on title.
+     * ordinary document reads -- only this query touches it. Native SQL with {@code ILIKE} so
+     * PostgreSQL can use the {@code pg_trgm} GIN indexes from migration 007.
      */
-    @Query("select new io.mikoshift.natsu.repository.DocumentSearchRow(d.id, d.title, st.searchText) "
-            + "from Document d left join DocumentSearchText st on st.documentId = d.id "
-            + "where d.user = :user and d.deletedAt is null "
-            + "and (lower(d.title) like lower(concat('%', :query, '%')) "
-            + "or lower(st.searchText) like lower(concat('%', :query, '%'))) "
-            + "order by d.updatedAtMs desc")
-    List<DocumentSearchRow> searchByUserAndQuery(@Param("user") User user, @Param("query") String query);
+    @Query(
+            value =
+                    """
+                    select d.id as id, d.title as title, st.search_text as searchText
+                    from documents d
+                    left join document_search_text st on st.document_id = d.id
+                    where d.user_id = :userId
+                      and d.deleted_at is null
+                      and (d.title ilike concat('%', :query, '%')
+                           or st.search_text ilike concat('%', :query, '%'))
+                    order by d.updated_at_ms desc
+                    """,
+            nativeQuery = true)
+    List<DocumentSearchRow> searchByUserAndQuery(@Param("userId") Long userId, @Param("query") String query);
 
     @Query("select coalesce(sum(d.packageSizeBytes), 0) from Document d where d.user = :user and d.deletedAt is null")
     long sumPackageSizeBytesByUser(@Param("user") User user);

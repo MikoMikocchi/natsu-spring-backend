@@ -39,7 +39,7 @@ public class DocumentQueryService {
 
     @Transactional(readOnly = true)
     public List<DocumentSearchResult> search(User user, String query) {
-        return documentRepository.searchByUserAndQuery(user, query).stream()
+        return documentRepository.searchByUserAndQuery(user.getId(), query).stream()
                 .map(row -> buildSearchResult(row, query))
                 .toList();
     }
