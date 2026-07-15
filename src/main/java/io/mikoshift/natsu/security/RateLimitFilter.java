@@ -66,15 +66,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
                             "login-email",
                             username.trim().toLowerCase(),
                             properties.rateLimit().loginEmail())) {
-                writeTooManyRequests(response, properties.rateLimit().loginEmail().windowSeconds());
+                writeTooManyRequests(
+                        response, properties.rateLimit().loginEmail().windowSeconds());
                 return true;
             }
         } else if (NatsuOAuth2ParameterNames.isRefreshGrant(grantType)) {
             String refreshToken = request.getParameter(OAuth2ParameterNames.REFRESH_TOKEN);
             if (StringUtils.hasText(refreshToken)
                     && !rateLimiter.tryConsume(
-                            "refresh-token", refreshToken, properties.rateLimit().refreshToken())) {
-                writeTooManyRequests(response, properties.rateLimit().refreshToken().windowSeconds());
+                            "refresh-token",
+                            refreshToken,
+                            properties.rateLimit().refreshToken())) {
+                writeTooManyRequests(
+                        response, properties.rateLimit().refreshToken().windowSeconds());
                 return true;
             }
         }

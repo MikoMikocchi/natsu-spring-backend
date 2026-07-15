@@ -46,8 +46,7 @@ class BookImportPersistence {
         }
 
         try {
-            storageQuotaService.checkUserQuota(
-                    document.getUser(), stored.sizeBytes(), document.getPackageSizeBytes());
+            storageQuotaService.checkUserQuota(document.getUser(), stored.sizeBytes(), document.getPackageSizeBytes());
         } catch (QuotaExceededException e) {
             packageStorageService.delete(documentId);
             document.setStatus(Document.Status.FAILED);

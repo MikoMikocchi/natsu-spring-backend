@@ -1,15 +1,14 @@
 package io.mikoshift.natsu.config;
 
 import io.mikoshift.natsu.security.oauth2.NatsuAuthorizationGrantTypes;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
@@ -51,6 +50,7 @@ public class RegisteredClientInitializer implements ApplicationRunner {
                 .build();
 
         registeredClientRepository.save(registeredClient);
-        log.info("Seeded OAuth2 registered client '{}'", natsuProperties.oauth2().clientId());
+        log.info(
+                "Seeded OAuth2 registered client '{}'", natsuProperties.oauth2().clientId());
     }
 }

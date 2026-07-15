@@ -77,8 +77,7 @@ public class DictionaryLookupService {
                 .toList();
     }
 
-    private static Map<String, List<DictionaryTerm>> indexTermsByWord(
-            List<String> words, List<DictionaryTerm> terms) {
+    private static Map<String, List<DictionaryTerm>> indexTermsByWord(List<String> words, List<DictionaryTerm> terms) {
         Set<String> wordSet = Set.copyOf(words);
         Map<String, List<DictionaryTerm>> termsByWord = new HashMap<>();
         for (DictionaryTerm term : terms) {

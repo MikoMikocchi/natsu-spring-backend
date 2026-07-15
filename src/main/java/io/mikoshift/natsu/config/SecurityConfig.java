@@ -55,8 +55,7 @@ public class SecurityConfig {
                         .permitAll()
                         .anyRequest()
                         .authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .bearerTokenResolver(bearerTokenResolver)
+                .oauth2ResourceServer(oauth2 -> oauth2.bearerTokenResolver(bearerTokenResolver)
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
                         .jwt(jwt -> jwt.decoder(jwtDecoder)
                                 .jwtAuthenticationConverter(natsuJwtAuthenticationConverter::convert)))

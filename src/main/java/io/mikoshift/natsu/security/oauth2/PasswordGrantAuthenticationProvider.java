@@ -10,8 +10,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClaimAccessor;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
@@ -21,7 +21,6 @@ import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AccessTokenAuthenticationToken;
-import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -29,7 +28,9 @@ import org.springframework.security.oauth2.server.authorization.context.Authoriz
 import org.springframework.security.oauth2.server.authorization.token.DefaultOAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
-public class PasswordGrantAuthenticationProvider implements org.springframework.security.authentication.AuthenticationProvider {
+
+public class PasswordGrantAuthenticationProvider
+        implements org.springframework.security.authentication.AuthenticationProvider {
 
     private final AuthenticationManager authenticationManager;
     private final OAuth2AuthorizationService authorizationService;
@@ -72,9 +73,7 @@ public class PasswordGrantAuthenticationProvider implements org.springframework.
         Set<String> authorizedScopes = new LinkedHashSet<>(registeredClient.getScopes());
 
         Authentication principalForStorage = UsernamePasswordAuthenticationToken.authenticated(
-                userDetails(userAuthentication).getUsername(),
-                null,
-                userAuthentication.getAuthorities());
+                userDetails(userAuthentication).getUsername(), null, userAuthentication.getAuthorities());
 
         OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
                 .id(UUID.randomUUID().toString())
@@ -112,8 +111,8 @@ public class PasswordGrantAuthenticationProvider implements org.springframework.
         if (generatedAccessToken instanceof ClaimAccessor claimAccessor) {
             authorizationBuilder.token(
                     accessToken,
-                    metadata -> metadata.put(
-                            OAuth2Authorization.Token.CLAIMS_METADATA_NAME, claimAccessor.getClaims()));
+                    metadata ->
+                            metadata.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, claimAccessor.getClaims()));
         } else {
             authorizationBuilder.accessToken(accessToken);
         }

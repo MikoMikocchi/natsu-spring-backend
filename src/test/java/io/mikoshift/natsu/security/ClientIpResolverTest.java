@@ -54,8 +54,8 @@ class ClientIpResolverTest {
     }
 
     private static ClientIpResolver resolverWithTrustedProxies(String... trustedProxyCidrs) {
-        NatsuProperties properties = NatsuPropertiesFixtures.minimal(
-                "/tmp/natsu-test", 52_428_800L, 524_288_000L, trustedProxyCidrs);
+        NatsuProperties properties =
+                NatsuPropertiesFixtures.minimal("/tmp/natsu-test", 52_428_800L, 524_288_000L, trustedProxyCidrs);
         return new ClientIpResolver(properties);
     }
 }

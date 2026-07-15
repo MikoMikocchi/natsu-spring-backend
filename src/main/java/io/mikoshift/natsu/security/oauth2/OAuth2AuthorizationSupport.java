@@ -69,7 +69,8 @@ public class OAuth2AuthorizationSupport {
     }
 
     public Instant createdAt(OAuth2Authorization authorization) {
-        if (authorization.getAccessToken() != null && authorization.getAccessToken().getToken().getIssuedAt() != null) {
+        if (authorization.getAccessToken() != null
+                && authorization.getAccessToken().getToken().getIssuedAt() != null) {
             return authorization.getAccessToken().getToken().getIssuedAt();
         }
         return Instant.EPOCH;

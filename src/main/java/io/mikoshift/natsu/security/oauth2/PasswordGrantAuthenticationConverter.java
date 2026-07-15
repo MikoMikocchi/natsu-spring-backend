@@ -34,7 +34,8 @@ public class PasswordGrantAuthenticationConverter implements AuthenticationConve
         MultiValueMap<String, String> parameters = getParameters(request);
         String clientId = parameters.getFirst(OAuth2ParameterNames.CLIENT_ID);
         if (!StringUtils.hasText(clientId)) {
-            throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST), "client_id is required");
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST), "client_id is required");
         }
 
         RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientId);

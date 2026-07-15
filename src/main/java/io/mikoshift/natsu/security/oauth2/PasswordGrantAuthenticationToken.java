@@ -1,7 +1,6 @@
 package io.mikoshift.natsu.security.oauth2;
 
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationGrantAuthenticationToken;
 
 public class PasswordGrantAuthenticationToken extends OAuth2AuthorizationGrantAuthenticationToken {

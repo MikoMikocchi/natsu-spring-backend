@@ -47,25 +47,19 @@ public class AuthorizationServerConfig {
                 new PasswordGrantAuthenticationConverter(registeredClientRepository);
         PasswordGrantAuthenticationProvider passwordGrantAuthenticationProvider =
                 new PasswordGrantAuthenticationProvider(
-                        authenticationManager,
-                        authorizationService,
-                        tokenGenerator,
-                        registeredClientRepository);
-        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
-                new OAuth2AuthorizationServerConfigurer();
+                        authenticationManager, authorizationService, tokenGenerator, registeredClientRepository);
+        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
 
         http.securityMatcher("/oauth2/**", "/.well-known/**")
-                .with(
-                        authorizationServerConfigurer,
-                        authorizationServer -> authorizationServer
-                                .registeredClientRepository(registeredClientRepository)
-                                .authorizationService(authorizationService)
-                                .authorizationConsentService(authorizationConsentService)
-                                .authorizationServerSettings(authorizationServerSettings)
-                                .tokenGenerator(tokenGenerator)
-                                .tokenEndpoint(tokenEndpoint -> tokenEndpoint
-                                        .accessTokenRequestConverter(passwordGrantAuthenticationConverter)
-                                        .authenticationProvider(passwordGrantAuthenticationProvider)))
+                .with(authorizationServerConfigurer, authorizationServer -> authorizationServer
+                        .registeredClientRepository(registeredClientRepository)
+                        .authorizationService(authorizationService)
+                        .authorizationConsentService(authorizationConsentService)
+                        .authorizationServerSettings(authorizationServerSettings)
+                        .tokenGenerator(tokenGenerator)
+                        .tokenEndpoint(tokenEndpoint -> tokenEndpoint
+                                .accessTokenRequestConverter(passwordGrantAuthenticationConverter)
+                                .authenticationProvider(passwordGrantAuthenticationProvider)))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/oauth2/token", "/oauth2/revoke", "/oauth2/jwks", "/.well-known/**")
                         .permitAll()

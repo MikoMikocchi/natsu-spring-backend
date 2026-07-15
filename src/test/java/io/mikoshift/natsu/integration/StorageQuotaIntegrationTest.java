@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.jayway.jsonpath.JsonPath;
 import io.mikoshift.natsu.TestcontainersConfiguration;
 import io.mikoshift.natsu.entity.Document;
 import io.mikoshift.natsu.repository.DocumentRepository;
@@ -71,21 +70,19 @@ class StorageQuotaIntegrationTest {
         byte[] packageBytes = buildZip("manifest.json", "x".repeat(700));
         assertThat(packageBytes.length).isGreaterThan(600).isLessThan(1000);
 
-        MockMultipartFile packageA =
-                new MockMultipartFile("package", "a.zip", "application/zip", packageBytes);
-        MockMultipartFile packageB =
-                new MockMultipartFile("package", "b.zip", "application/zip", packageBytes);
+        MockMultipartFile packageA = new MockMultipartFile("package", "a.zip", "application/zip", packageBytes);
+        MockMultipartFile packageB = new MockMultipartFile("package", "b.zip", "application/zip", packageBytes);
 
         List<Integer> statuses = uploadInParallel(
-                token,
-                List.of(
-                        uploadRequest(documentIdA, packageA),
-                        uploadRequest(documentIdB, packageB)));
+                token, List.of(uploadRequest(documentIdA, packageA), uploadRequest(documentIdB, packageB)));
 
         assertThat(statuses.stream().filter(code -> code == 200).count()).isEqualTo(1);
         assertThat(statuses.stream().filter(code -> code == 422).count()).isEqualTo(1);
 
-        long userId = userRepository.findByEmailIgnoreCase("quota-race@example.com").orElseThrow().getId();
+        long userId = userRepository
+                .findByEmailIgnoreCase("quota-race@example.com")
+                .orElseThrow()
+                .getId();
         long totalUsed = documentRepository.sumPackageSizeBytesByUser(
                 userRepository.findById(userId).orElseThrow());
         assertThat(totalUsed).isLessThanOrEqualTo(1000L);
@@ -99,9 +96,9 @@ class StorageQuotaIntegrationTest {
         String documentIdB = createSyncedDocument(token);
 
         byte[] packageBytes = buildZip("manifest.json", "x".repeat(750));
-        mockMvc.perform(uploadRequest(documentIdA, new MockMultipartFile(
-                        "package", "a.zip", "application/zip", packageBytes))
-                .header("Authorization", "Bearer " + token))
+        mockMvc.perform(uploadRequest(
+                                documentIdA, new MockMultipartFile("package", "a.zip", "application/zip", packageBytes))
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
 
         Document secondDocument = documentRepository
@@ -134,13 +131,13 @@ class StorageQuotaIntegrationTest {
         return id;
     }
 
-    private static MockMultipartHttpServletRequestBuilder uploadRequest(
-            String documentId, MockMultipartFile file) {
-        return multipart(HttpMethod.PUT, "/v1/documents/" + documentId + "/package").file(file);
+    private static MockMultipartHttpServletRequestBuilder uploadRequest(String documentId, MockMultipartFile file) {
+        return multipart(HttpMethod.PUT, "/v1/documents/" + documentId + "/package")
+                .file(file);
     }
 
-    private List<Integer> uploadInParallel(
-            String token, List<MockMultipartHttpServletRequestBuilder> requests) throws Exception {
+    private List<Integer> uploadInParallel(String token, List<MockMultipartHttpServletRequestBuilder> requests)
+            throws Exception {
         try (ExecutorService executor = Executors.newFixedThreadPool(requests.size())) {
             List<Callable<Integer>> tasks = new ArrayList<>();
             for (MockMultipartHttpServletRequestBuilder request : requests) {

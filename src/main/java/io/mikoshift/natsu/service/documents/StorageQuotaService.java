@@ -31,9 +31,7 @@ public class StorageQuotaService {
      * FOR UPDATE} on the user row is held until the document size change commits.
      */
     public void checkUserQuota(User user, long newSizeBytes, long currentSizeOfReplacedDocument) {
-        userRepository
-                .findByIdForUpdate(user.getId())
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        userRepository.findByIdForUpdate(user.getId()).orElseThrow(() -> new NotFoundException("User not found"));
         long used = documentRepository.sumPackageSizeBytesByUser(user) - currentSizeOfReplacedDocument;
         if (used + newSizeBytes > properties.maxStorageBytesPerUser()) {
             throw new QuotaExceededException("Storage quota exceeded (max "

@@ -3,11 +3,11 @@ package io.mikoshift.natsu.security.oauth2;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.repository.UserRepository;
 import io.mikoshift.natsu.security.NatsuUserDetails;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.stereotype.Component;
-import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -18,7 +18,8 @@ public class NatsuOAuth2TokenCustomizer implements OAuth2TokenCustomizer<JwtEnco
     @Override
     public void customize(JwtEncodingContext context) {
         if (context.getAuthorization() != null) {
-            context.getClaims().claim(NatsuOAuth2Claims.SID, context.getAuthorization().getId());
+            context.getClaims()
+                    .claim(NatsuOAuth2Claims.SID, context.getAuthorization().getId());
             String deviceName = context.getAuthorization().getAttribute(NatsuOAuth2Claims.DEVICE_NAME);
             if (deviceName != null) {
                 context.getClaims().claim(NatsuOAuth2Claims.DEVICE_NAME, deviceName);

@@ -58,8 +58,7 @@ public class GlobalExceptionHandler {
             return handleApiException(new QuotaExceededException("Storage quota exceeded"));
         }
         log.warn("Data integrity violation", ex);
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("errors", Map.of("base", List.of("Conflict"))));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("errors", Map.of("base", List.of("Conflict"))));
     }
 
     @ExceptionHandler(Exception.class)

@@ -76,8 +76,7 @@ class AuthorizationServerIntegrationTest {
         assertThat(jwt.getSubject()).isNotBlank();
         assertThat(jwt.getClaimAsString("email")).isEqualTo(email);
 
-        OAuth2Authorization authorization =
-                authorizationService.findById(jwt.getClaimAsString(NatsuOAuth2Claims.SID));
+        OAuth2Authorization authorization = authorizationService.findById(jwt.getClaimAsString(NatsuOAuth2Claims.SID));
         assertThat(authorization).isNotNull();
         assertThat(jwtAuthenticationConverter.convert(jwt)).isNotNull();
         SecurityContextHolder.clearContext();
@@ -94,7 +93,8 @@ class AuthorizationServerIntegrationTest {
     void refreshRotatesTokensAndRevokeInvalidatesAccess() throws Exception {
         String email = "refresh-revoke@example.com";
         OAuth2TestSupport.register(mockMvc, email);
-        OAuth2TestSupport.TokenPair pair = OAuth2TestSupport.login(mockMvc, email, OAuth2TestSupport.DEFAULT_PASSWORD, "phone");
+        OAuth2TestSupport.TokenPair pair =
+                OAuth2TestSupport.login(mockMvc, email, OAuth2TestSupport.DEFAULT_PASSWORD, "phone");
 
         MvcResult refreshResult = mockMvc.perform(post("/oauth2/token")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)

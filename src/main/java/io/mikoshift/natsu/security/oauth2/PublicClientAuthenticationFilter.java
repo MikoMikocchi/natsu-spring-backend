@@ -31,7 +31,8 @@ public class PublicClientAuthenticationFilter extends OncePerRequestFilter {
         if (("/oauth2/token".equals(request.getRequestURI()) || "/oauth2/revoke".equals(request.getRequestURI()))
                 && "POST".equalsIgnoreCase(request.getMethod())) {
             String clientId = request.getParameter(OAuth2ParameterNames.CLIENT_ID);
-            if (StringUtils.hasText(clientId) && !StringUtils.hasText(request.getParameter(OAuth2ParameterNames.CLIENT_SECRET))) {
+            if (StringUtils.hasText(clientId)
+                    && !StringUtils.hasText(request.getParameter(OAuth2ParameterNames.CLIENT_SECRET))) {
                 RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientId);
                 if (registeredClient != null
                         && registeredClient

@@ -38,7 +38,10 @@ class BookImportPersistenceTest {
     @BeforeEach
     void setUp() {
         persistence = new BookImportPersistence(
-                documentRepository, documentSearchTextRepository, storageQuotaService, packageStorageService,
+                documentRepository,
+                documentSearchTextRepository,
+                storageQuotaService,
+                packageStorageService,
                 Clock.systemUTC());
     }
 

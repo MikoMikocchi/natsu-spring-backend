@@ -83,7 +83,8 @@ public class PasswordService {
                 If you did not request a password reset, you can safely ignore this email.
 
                 — The Natsu Team
-                """.formatted(userName, resetUrl, properties.auth().resetTokenTtl().toHours()));
+                """.formatted(
+                        userName, resetUrl, properties.auth().resetTokenTtl().toHours()));
         try {
             mailSender.send(message);
         } catch (MailException e) {

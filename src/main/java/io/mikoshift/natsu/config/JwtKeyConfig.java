@@ -60,8 +60,8 @@ public class JwtKeyConfig {
 
     private static RSAKey loadRsaKey(String privateKeyPem, String publicKeyPem) {
         try {
-            RSAPrivateKey privateKey = (RSAPrivateKey) KeyFactory.getInstance("RSA")
-                    .generatePrivate(new PKCS8EncodedKeySpec(decodePem(privateKeyPem)));
+            RSAPrivateKey privateKey = (RSAPrivateKey)
+                    KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(decodePem(privateKeyPem)));
             RSAPublicKey publicKey = (RSAPublicKey)
                     KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decodePem(publicKeyPem)));
             return new RSAKey.Builder(publicKey)

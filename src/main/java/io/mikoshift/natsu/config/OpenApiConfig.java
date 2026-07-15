@@ -36,7 +36,6 @@ public class OpenApiConfig {
                                 OAUTH2_SCHEME,
                                 new SecurityScheme()
                                         .type(SecurityScheme.Type.OAUTH2)
-                                        .flows(new OAuthFlows()
-                                                .password(new OAuthFlow().tokenUrl(tokenUrl)))));
+                                        .flows(new OAuthFlows().password(new OAuthFlow().tokenUrl(tokenUrl)))));
     }
 }

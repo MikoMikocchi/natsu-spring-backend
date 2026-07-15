@@ -26,9 +26,7 @@ public class AccountDeletionService {
 
     @Transactional
     public void deleteAccount(User authenticatedUser, String password) {
-        User user = userRepository
-                .findById(authenticatedUser.getId())
-                .orElseThrow(InvalidCredentialsException::new);
+        User user = userRepository.findById(authenticatedUser.getId()).orElseThrow(InvalidCredentialsException::new);
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }

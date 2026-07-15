@@ -10,8 +10,8 @@ public final class NatsuPropertiesFixtures {
     private static final NatsuProperties.RateLimit.Bucket BUCKET = new NatsuProperties.RateLimit.Bucket(5, 60);
     private static final NatsuProperties.RateLimit.BucketCache BUCKET_CACHE =
             new NatsuProperties.RateLimit.BucketCache(10, 10_000);
-    public static final NatsuProperties.RateLimit RATE_LIMIT = new NatsuProperties.RateLimit(
-            BUCKET, BUCKET, BUCKET, BUCKET, BUCKET, BUCKET, BUCKET_CACHE);
+    public static final NatsuProperties.RateLimit RATE_LIMIT =
+            new NatsuProperties.RateLimit(BUCKET, BUCKET, BUCKET, BUCKET, BUCKET, BUCKET, BUCKET_CACHE);
     public static final NatsuProperties.Auth AUTH =
             new NatsuProperties.Auth(Duration.ofHours(1), Duration.ofDays(365), Duration.ofHours(2));
     public static final NatsuProperties.OAuth2 OAUTH2 =

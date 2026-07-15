@@ -39,9 +39,6 @@ public class DeviceSessionService {
         OAuth2Authorization authorization = authorizationService.findById(session.id());
         String deviceName = authorization != null ? authorizationSupport.deviceName(authorization) : "Unknown device";
         return new DeviceSessionResponse(
-                session.id(),
-                deviceName,
-                session.createdAt(),
-                session.id().equals(currentAuthorizationId));
+                session.id(), deviceName, session.createdAt(), session.id().equals(currentAuthorizationId));
     }
 }

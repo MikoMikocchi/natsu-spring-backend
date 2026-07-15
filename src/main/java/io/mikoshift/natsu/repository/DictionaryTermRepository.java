@@ -9,8 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface DictionaryTermRepository extends JpaRepository<DictionaryTerm, Long> {
 
-    @Query(
-            "select t from DictionaryTerm t join fetch t.dictionary"
-                    + " where t.expression in :words or t.reading in :words")
+    @Query("select t from DictionaryTerm t join fetch t.dictionary"
+            + " where t.expression in :words or t.reading in :words")
     List<DictionaryTerm> findByWords(@Param("words") Collection<String> words);
 }

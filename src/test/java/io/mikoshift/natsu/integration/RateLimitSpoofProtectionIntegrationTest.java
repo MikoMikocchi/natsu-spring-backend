@@ -18,10 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * trusted proxy CIDRs are configured.
  */
 @TestPropertySource(
-        properties = {
-            "natsu.rate-limit.register.capacity=2",
-            "natsu.rate-limit.register.window-seconds=60"
-        })
+        properties = {"natsu.rate-limit.register.capacity=2", "natsu.rate-limit.register.window-seconds=60"})
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)

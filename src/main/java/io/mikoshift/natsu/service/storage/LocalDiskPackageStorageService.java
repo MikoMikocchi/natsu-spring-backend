@@ -29,11 +29,7 @@ public class LocalDiskPackageStorageService implements PackageStorageService {
             try {
                 Files.write(tempPath, content);
                 try {
-                    Files.move(
-                            tempPath,
-                            path,
-                            StandardCopyOption.ATOMIC_MOVE,
-                            StandardCopyOption.REPLACE_EXISTING);
+                    Files.move(tempPath, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
                 } catch (AtomicMoveNotSupportedException e) {
                     Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING);
                 }

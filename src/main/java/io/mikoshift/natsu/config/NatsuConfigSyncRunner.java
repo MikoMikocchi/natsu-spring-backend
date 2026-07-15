@@ -17,13 +17,10 @@ class NatsuConfigSyncRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        jdbcTemplate.update(
-                """
+        jdbcTemplate.update("""
                 insert into natsu_config (key, value)
                 values (?, ?)
                 on conflict (key) do update set value = excluded.value
-                """,
-                MAX_STORAGE_BYTES_PER_USER_KEY,
-                properties.maxStorageBytesPerUser());
+                """, MAX_STORAGE_BYTES_PER_USER_KEY, properties.maxStorageBytesPerUser());
     }
 }

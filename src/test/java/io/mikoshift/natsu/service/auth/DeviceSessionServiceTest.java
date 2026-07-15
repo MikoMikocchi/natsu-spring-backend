@@ -44,7 +44,8 @@ class DeviceSessionServiceTest {
     @Test
     void listMarksOnlyTheCurrentAuthorizationAsCurrent() {
         AuthorizationSession current = new AuthorizationSession("auth-1", user.getEmail(), Instant.now());
-        AuthorizationSession other = new AuthorizationSession("auth-2", user.getEmail(), Instant.now().minusSeconds(3600));
+        AuthorizationSession other = new AuthorizationSession(
+                "auth-2", user.getEmail(), Instant.now().minusSeconds(3600));
         when(authorizationSupport.findActiveSessionsForUser(user)).thenReturn(List.of(current, other));
 
         OAuth2Authorization currentAuthorization = OAuth2Authorization.withRegisteredClient(
@@ -58,8 +59,7 @@ class DeviceSessionServiceTest {
                                 .build())
                 .id("auth-1")
                 .principalName(user.getEmail())
-                .authorizationGrantType(
-                        org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
+                .authorizationGrantType(org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
                 .attribute(NatsuOAuth2Claims.DEVICE_NAME, "This iPhone")
                 .build();
         OAuth2Authorization otherAuthorization = OAuth2Authorization.withRegisteredClient(
@@ -73,8 +73,7 @@ class DeviceSessionServiceTest {
                                 .build())
                 .id("auth-2")
                 .principalName(user.getEmail())
-                .authorizationGrantType(
-                        org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
+                .authorizationGrantType(org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
                 .attribute(NatsuOAuth2Claims.DEVICE_NAME, "Old iPad")
                 .build();
         when(authorizationService.findById("auth-1")).thenReturn(currentAuthorization);
@@ -83,7 +82,8 @@ class DeviceSessionServiceTest {
         List<DeviceSessionResponse> sessions = deviceSessionService.list(user, "auth-1");
 
         assertThat(sessions).hasSize(2);
-        assertThat(sessions.stream().filter(DeviceSessionResponse::current).count()).isEqualTo(1);
+        assertThat(sessions.stream().filter(DeviceSessionResponse::current).count())
+                .isEqualTo(1);
         assertThat(sessions.stream()
                         .filter(DeviceSessionResponse::current)
                         .findFirst()
@@ -114,8 +114,7 @@ class DeviceSessionServiceTest {
                                 .build())
                 .id("auth-5")
                 .principalName(user.getEmail())
-                .authorizationGrantType(
-                        org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
+                .authorizationGrantType(org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
                 .build();
         when(authorizationService.findById("auth-5")).thenReturn(authorization);
 

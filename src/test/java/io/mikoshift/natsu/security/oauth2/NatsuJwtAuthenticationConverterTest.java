@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 
@@ -38,7 +38,8 @@ class NatsuJwtAuthenticationConverterTest {
         user.setId(42L);
         user.setEmail("reader@example.com");
 
-        org.mockito.Mockito.when(authorizationSupport.isActive("auth-1", "token")).thenReturn(true);
+        org.mockito.Mockito.when(authorizationSupport.isActive("auth-1", "token"))
+                .thenReturn(true);
         org.mockito.Mockito.when(userRepository.findById(42L)).thenReturn(java.util.Optional.of(user));
 
         UsernamePasswordAuthenticationToken authentication =
@@ -56,7 +57,8 @@ class NatsuJwtAuthenticationConverterTest {
                 .claim(NatsuOAuth2Claims.SID, "auth-1")
                 .build();
 
-        org.mockito.Mockito.when(authorizationSupport.isActive("auth-1", "token")).thenReturn(false);
+        org.mockito.Mockito.when(authorizationSupport.isActive("auth-1", "token"))
+                .thenReturn(false);
 
         assertThatThrownBy(() -> converter.convert(jwt)).isInstanceOf(InvalidBearerTokenException.class);
     }
