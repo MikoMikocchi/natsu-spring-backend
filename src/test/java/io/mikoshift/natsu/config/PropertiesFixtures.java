@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /** Shared defaults for unit tests that construct {@link NatsuProperties} manually. */
-public final class NatsuPropertiesFixtures {
+public final class PropertiesFixtures {
 
     private static final NatsuProperties.RateLimit.Bucket BUCKET = new NatsuProperties.RateLimit.Bucket(5, 60);
     private static final NatsuProperties.RateLimit.BucketCache BUCKET_CACHE =
@@ -24,7 +24,7 @@ public final class NatsuPropertiesFixtures {
     public static final NatsuProperties.BookImportExecutor BOOK_IMPORT_EXECUTOR =
             new NatsuProperties.BookImportExecutor(2, 4, 50);
 
-    private NatsuPropertiesFixtures() {}
+    private PropertiesFixtures() {}
 
     public static NatsuProperties minimal(String storageRoot, long maxPackageBytes, long maxStorageBytesPerUser) {
         return minimal(storageRoot, maxPackageBytes, maxStorageBytesPerUser, new String[0]);

@@ -3,7 +3,7 @@ package io.mikoshift.natsu.service.bookimport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.mikoshift.natsu.config.NatsuPropertiesFixtures;
+import io.mikoshift.natsu.config.PropertiesFixtures;
 import io.mikoshift.natsu.entity.Document.SourceFormat;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,7 +28,7 @@ class PandocBridgeImporterTest {
 
     @BeforeEach
     void setUp() {
-        epubImporter = new EpubImporter(NatsuPropertiesFixtures.minimal("/tmp/natsu-test", 52_428_800L, 524_288_000L));
+        epubImporter = new EpubImporter(PropertiesFixtures.minimal("/tmp/natsu-test", 52_428_800L, 524_288_000L));
     }
 
     @Nested

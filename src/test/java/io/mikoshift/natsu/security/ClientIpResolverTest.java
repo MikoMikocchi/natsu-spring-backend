@@ -3,7 +3,7 @@ package io.mikoshift.natsu.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mikoshift.natsu.config.NatsuProperties;
-import io.mikoshift.natsu.config.NatsuPropertiesFixtures;
+import io.mikoshift.natsu.config.PropertiesFixtures;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 
@@ -55,7 +55,7 @@ class ClientIpResolverTest {
 
     private static ClientIpResolver resolverWithTrustedProxies(String... trustedProxyCidrs) {
         NatsuProperties properties =
-                NatsuPropertiesFixtures.minimal("/tmp/natsu-test", 52_428_800L, 524_288_000L, trustedProxyCidrs);
+                PropertiesFixtures.minimal("/tmp/natsu-test", 52_428_800L, 524_288_000L, trustedProxyCidrs);
         return new ClientIpResolver(properties);
     }
 }

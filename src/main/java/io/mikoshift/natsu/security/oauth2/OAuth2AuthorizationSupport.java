@@ -64,7 +64,7 @@ public class OAuth2AuthorizationSupport {
     }
 
     public String deviceName(OAuth2Authorization authorization) {
-        String deviceName = authorization.getAttribute(NatsuOAuth2Claims.DEVICE_NAME);
+        String deviceName = authorization.getAttribute(OAuth2Claims.DEVICE_NAME);
         return deviceName != null ? deviceName : "Unknown device";
     }
 

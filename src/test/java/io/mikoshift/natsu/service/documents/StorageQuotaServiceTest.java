@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import io.mikoshift.natsu.config.NatsuPropertiesFixtures;
+import io.mikoshift.natsu.config.PropertiesFixtures;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.QuotaExceededException;
 import io.mikoshift.natsu.exception.ValidationException;
@@ -37,7 +37,7 @@ class StorageQuotaServiceTest {
         quotaService = new StorageQuotaService(
                 documentRepository,
                 userRepository,
-                NatsuPropertiesFixtures.minimal("/tmp/natsu-test", MAX_PACKAGE_BYTES, MAX_STORAGE_PER_USER));
+                PropertiesFixtures.minimal("/tmp/natsu-test", MAX_PACKAGE_BYTES, MAX_STORAGE_PER_USER));
         user = new User();
         user.setId(1L);
     }

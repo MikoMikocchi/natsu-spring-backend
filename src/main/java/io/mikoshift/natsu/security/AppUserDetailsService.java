@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class NatsuUserDetailsService implements UserDetailsService {
+public class AppUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
@@ -17,7 +17,7 @@ public class NatsuUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) {
         return userRepository
                 .findByEmailIgnoreCase(username)
-                .map(NatsuUserDetails::new)
+                .map(AppUserDetails::new)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 }

@@ -2,7 +2,7 @@ package io.mikoshift.natsu.config;
 
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import io.mikoshift.natsu.security.oauth2.NatsuOAuth2TokenCustomizer;
+import io.mikoshift.natsu.security.oauth2.JwtTokenCustomizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,7 +53,7 @@ public class OAuth2PersistenceConfig {
 
     @Bean
     OAuth2TokenGenerator<?> tokenGenerator(
-            JWKSource<SecurityContext> jwkSource, NatsuOAuth2TokenCustomizer jwtCustomizer) {
+            JWKSource<SecurityContext> jwkSource, JwtTokenCustomizer jwtCustomizer) {
         JwtGenerator jwtGenerator = new JwtGenerator(new NimbusJwtEncoder(jwkSource));
         jwtGenerator.setJwtCustomizer(jwtCustomizer);
         OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();

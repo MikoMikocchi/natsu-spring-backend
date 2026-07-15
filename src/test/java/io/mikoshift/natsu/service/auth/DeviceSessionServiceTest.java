@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 import io.mikoshift.natsu.dto.response.DeviceSessionResponse;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.NotFoundException;
-import io.mikoshift.natsu.security.oauth2.NatsuOAuth2Claims;
+import io.mikoshift.natsu.security.oauth2.OAuth2Claims;
 import io.mikoshift.natsu.security.oauth2.OAuth2AuthorizationSupport;
 import io.mikoshift.natsu.security.oauth2.OAuth2AuthorizationSupport.AuthorizationSession;
 import java.time.Instant;
@@ -60,7 +60,7 @@ class DeviceSessionServiceTest {
                 .id("auth-1")
                 .principalName(user.getEmail())
                 .authorizationGrantType(org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
-                .attribute(NatsuOAuth2Claims.DEVICE_NAME, "This iPhone")
+                .attribute(OAuth2Claims.DEVICE_NAME, "This iPhone")
                 .build();
         OAuth2Authorization otherAuthorization = OAuth2Authorization.withRegisteredClient(
                         org.springframework.security.oauth2.server.authorization.client.RegisteredClient.withId("id2")
@@ -74,7 +74,7 @@ class DeviceSessionServiceTest {
                 .id("auth-2")
                 .principalName(user.getEmail())
                 .authorizationGrantType(org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
-                .attribute(NatsuOAuth2Claims.DEVICE_NAME, "Old iPad")
+                .attribute(OAuth2Claims.DEVICE_NAME, "Old iPad")
                 .build();
         when(authorizationService.findById("auth-1")).thenReturn(currentAuthorization);
         when(authorizationService.findById("auth-2")).thenReturn(otherAuthorization);

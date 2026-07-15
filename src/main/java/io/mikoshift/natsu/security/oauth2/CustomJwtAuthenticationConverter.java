@@ -13,14 +13,14 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class NatsuJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
+public class CustomJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
     private final OAuth2AuthorizationSupport authorizationSupport;
     private final UserRepository userRepository;
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
-        String sid = jwt.getClaimAsString(NatsuOAuth2Claims.SID);
+        String sid = jwt.getClaimAsString(OAuth2Claims.SID);
         if (sid == null || !authorizationSupport.isActive(sid, jwt.getTokenValue())) {
             throw new InvalidBearerTokenException("Session revoked or invalid");
         }
@@ -32,7 +32,7 @@ public class NatsuJwtAuthenticationConverter implements Converter<Jwt, AbstractA
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(user, jwt, List.of());
-        authentication.setDetails(new NatsuAuthenticationDetails(sid));
+        authentication.setDetails(new SessionAuthenticationDetails(sid));
         return authentication;
     }
 }

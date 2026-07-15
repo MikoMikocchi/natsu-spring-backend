@@ -1,7 +1,7 @@
 package io.mikoshift.natsu.security;
 
 import io.mikoshift.natsu.config.NatsuProperties;
-import io.mikoshift.natsu.security.oauth2.NatsuOAuth2ParameterNames;
+import io.mikoshift.natsu.security.oauth2.AppOAuth2ParameterNames;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -59,8 +59,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private boolean rejectOAuth2TokenRequest(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         String grantType = request.getParameter(OAuth2ParameterNames.GRANT_TYPE);
-        if (NatsuOAuth2ParameterNames.isPasswordGrant(grantType)) {
-            String username = request.getParameter(NatsuOAuth2ParameterNames.USERNAME);
+        if (AppOAuth2ParameterNames.isPasswordGrant(grantType)) {
+            String username = request.getParameter(AppOAuth2ParameterNames.USERNAME);
             if (StringUtils.hasText(username)
                     && !rateLimiter.tryConsume(
                             "login-email",
@@ -70,7 +70,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                         response, properties.rateLimit().loginEmail().windowSeconds());
                 return true;
             }
-        } else if (NatsuOAuth2ParameterNames.isRefreshGrant(grantType)) {
+        } else if (AppOAuth2ParameterNames.isRefreshGrant(grantType)) {
             String refreshToken = request.getParameter(OAuth2ParameterNames.REFRESH_TOKEN);
             if (StringUtils.hasText(refreshToken)
                     && !rateLimiter.tryConsume(

@@ -8,11 +8,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Getter
-public class NatsuUserDetails implements UserDetails {
+public class AppUserDetails implements UserDetails {
 
     private final User user;
 
-    public NatsuUserDetails(User user) {
+    public AppUserDetails(User user) {
         this.user = user;
     }
 

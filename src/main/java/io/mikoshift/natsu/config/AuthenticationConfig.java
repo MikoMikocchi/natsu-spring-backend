@@ -1,6 +1,6 @@
 package io.mikoshift.natsu.config;
 
-import io.mikoshift.natsu.security.NatsuUserDetailsService;
+import io.mikoshift.natsu.security.AppUserDetailsService;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,7 +14,7 @@ public class AuthenticationConfig {
 
     @Bean
     AuthenticationManager authenticationManager(
-            NatsuUserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+            AppUserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return new ProviderManager(List.of(provider));

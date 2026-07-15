@@ -2,7 +2,7 @@ package io.mikoshift.natsu.security.oauth2;
 
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.repository.UserRepository;
-import io.mikoshift.natsu.security.NatsuUserDetails;
+import io.mikoshift.natsu.security.AppUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class NatsuOAuth2TokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingContext> {
+public class JwtTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingContext> {
 
     private final UserRepository userRepository;
 
@@ -19,10 +19,10 @@ public class NatsuOAuth2TokenCustomizer implements OAuth2TokenCustomizer<JwtEnco
     public void customize(JwtEncodingContext context) {
         if (context.getAuthorization() != null) {
             context.getClaims()
-                    .claim(NatsuOAuth2Claims.SID, context.getAuthorization().getId());
-            String deviceName = context.getAuthorization().getAttribute(NatsuOAuth2Claims.DEVICE_NAME);
+                    .claim(OAuth2Claims.SID, context.getAuthorization().getId());
+            String deviceName = context.getAuthorization().getAttribute(OAuth2Claims.DEVICE_NAME);
             if (deviceName != null) {
-                context.getClaims().claim(NatsuOAuth2Claims.DEVICE_NAME, deviceName);
+                context.getClaims().claim(OAuth2Claims.DEVICE_NAME, deviceName);
             }
         }
 
@@ -40,7 +40,7 @@ public class NatsuOAuth2TokenCustomizer implements OAuth2TokenCustomizer<JwtEnco
 
     private User resolveUser(JwtEncodingContext context) {
         Object principal = context.getPrincipal().getPrincipal();
-        if (principal instanceof NatsuUserDetails userDetails) {
+        if (principal instanceof AppUserDetails userDetails) {
             return userDetails.getUser();
         }
         if (context.getAuthorization() != null) {

@@ -1,13 +1,13 @@
 -- liquibase formatted sql
 
 -- changeset natsu:008-enforce-document-storage-quota splitStatements:false
--- Runtime settings mirrored from application config on startup (see NatsuConfigSyncRunner).
+-- Runtime settings mirrored from application config on startup (see ConfigSyncRunner).
 create table natsu_config (
     key   varchar(255) primary key,
     value bigint       not null
 );
 
--- Bootstrap default only; NatsuConfigSyncRunner overwrites this from application config on startup.
+-- Bootstrap default only; ConfigSyncRunner overwrites this from application config on startup.
 insert into natsu_config (key, value)
 values ('max_storage_bytes_per_user', 524288000);
 

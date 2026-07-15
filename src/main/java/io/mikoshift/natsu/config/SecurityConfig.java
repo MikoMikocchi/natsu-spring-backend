@@ -2,7 +2,7 @@ package io.mikoshift.natsu.config;
 
 import io.mikoshift.natsu.security.RateLimitFilter;
 import io.mikoshift.natsu.security.RestAuthenticationEntryPoint;
-import io.mikoshift.natsu.security.oauth2.NatsuJwtAuthenticationConverter;
+import io.mikoshift.natsu.security.oauth2.CustomJwtAuthenticationConverter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -40,7 +40,7 @@ public class SecurityConfig {
     private final NatsuProperties natsuProperties;
     private final JwtDecoder jwtDecoder;
     private final BearerTokenResolver bearerTokenResolver;
-    private final NatsuJwtAuthenticationConverter natsuJwtAuthenticationConverter;
+    private final CustomJwtAuthenticationConverter jwtAuthenticationConverter;
 
     @Bean
     @Order(2)
@@ -58,7 +58,7 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2.bearerTokenResolver(bearerTokenResolver)
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
                         .jwt(jwt -> jwt.decoder(jwtDecoder)
-                                .jwtAuthenticationConverter(natsuJwtAuthenticationConverter::convert)))
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter::convert)))
                 .exceptionHandling(eh -> eh.authenticationEntryPoint(restAuthenticationEntryPoint))
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

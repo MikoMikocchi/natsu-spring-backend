@@ -3,7 +3,7 @@ package io.mikoshift.natsu.service.bookimport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.mikoshift.natsu.config.NatsuPropertiesFixtures;
+import io.mikoshift.natsu.config.PropertiesFixtures;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -20,7 +20,7 @@ class EpubImporterTest {
 
     @BeforeEach
     void setUp() {
-        importer = new EpubImporter(NatsuPropertiesFixtures.minimal("/tmp/natsu-test", 52_428_800L, 524_288_000L));
+        importer = new EpubImporter(PropertiesFixtures.minimal("/tmp/natsu-test", 52_428_800L, 524_288_000L));
     }
 
     @Test

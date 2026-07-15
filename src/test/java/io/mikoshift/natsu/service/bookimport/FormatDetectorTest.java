@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mikoshift.natsu.config.NatsuProperties;
-import io.mikoshift.natsu.config.NatsuPropertiesFixtures;
+import io.mikoshift.natsu.config.PropertiesFixtures;
 import io.mikoshift.natsu.entity.Document.SourceFormat;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -82,6 +82,6 @@ class FormatDetectorTest {
     }
 
     private static NatsuProperties testProperties() {
-        return NatsuPropertiesFixtures.minimal("/tmp/natsu-test", 52_428_800L, 524_288_000L);
+        return PropertiesFixtures.minimal("/tmp/natsu-test", 52_428_800L, 524_288_000L);
     }
 }

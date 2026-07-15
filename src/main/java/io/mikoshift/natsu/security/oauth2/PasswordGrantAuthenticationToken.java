@@ -12,7 +12,7 @@ public class PasswordGrantAuthenticationToken extends OAuth2AuthorizationGrantAu
 
     public PasswordGrantAuthenticationToken(
             String clientId, Authentication clientPrincipal, String username, String password, String deviceName) {
-        super(NatsuAuthorizationGrantTypes.PASSWORD, clientPrincipal, null);
+        super(CustomAuthorizationGrantTypes.PASSWORD, clientPrincipal, null);
         this.clientId = clientId;
         this.username = username;
         this.password = password;

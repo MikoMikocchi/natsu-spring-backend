@@ -27,7 +27,7 @@ public class PasswordGrantAuthenticationConverter implements AuthenticationConve
     @Override
     public Authentication convert(HttpServletRequest request) {
         String grantType = request.getParameter(OAuth2ParameterNames.GRANT_TYPE);
-        if (!NatsuAuthorizationGrantTypes.PASSWORD.getValue().equals(grantType)) {
+        if (!CustomAuthorizationGrantTypes.PASSWORD.getValue().equals(grantType)) {
             return null;
         }
 
@@ -43,8 +43,8 @@ public class PasswordGrantAuthenticationConverter implements AuthenticationConve
             throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_CLIENT);
         }
 
-        String username = parameters.getFirst(NatsuOAuth2ParameterNames.USERNAME);
-        String password = parameters.getFirst(NatsuOAuth2ParameterNames.PASSWORD);
+        String username = parameters.getFirst(AppOAuth2ParameterNames.USERNAME);
+        String password = parameters.getFirst(AppOAuth2ParameterNames.PASSWORD);
         if (!StringUtils.hasText(username) || !StringUtils.hasText(password)) {
             throw new OAuth2AuthenticationException(
                     new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST), "username and password are required");

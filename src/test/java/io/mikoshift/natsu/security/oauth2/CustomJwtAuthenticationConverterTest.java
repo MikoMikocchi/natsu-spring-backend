@@ -15,7 +15,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 
 @ExtendWith(MockitoExtension.class)
-class NatsuJwtAuthenticationConverterTest {
+class CustomJwtAuthenticationConverterTest {
 
     @Mock
     private OAuth2AuthorizationSupport authorizationSupport;
@@ -24,14 +24,14 @@ class NatsuJwtAuthenticationConverterTest {
     private UserRepository userRepository;
 
     @InjectMocks
-    private NatsuJwtAuthenticationConverter converter;
+    private CustomJwtAuthenticationConverter converter;
 
     @Test
     void convertsActiveJwtToUserPrincipal() {
         Jwt jwt = Jwt.withTokenValue("token")
                 .header("alg", "RS256")
                 .claim("sub", "42")
-                .claim(NatsuOAuth2Claims.SID, "auth-1")
+                .claim(OAuth2Claims.SID, "auth-1")
                 .build();
 
         User user = new User();
@@ -46,7 +46,7 @@ class NatsuJwtAuthenticationConverterTest {
                 (UsernamePasswordAuthenticationToken) converter.convert(jwt);
 
         assertThat(authentication.getPrincipal()).isEqualTo(user);
-        assertThat(authentication.getDetails()).isEqualTo(new NatsuAuthenticationDetails("auth-1"));
+        assertThat(authentication.getDetails()).isEqualTo(new SessionAuthenticationDetails("auth-1"));
     }
 
     @Test
@@ -54,7 +54,7 @@ class NatsuJwtAuthenticationConverterTest {
         Jwt jwt = Jwt.withTokenValue("token")
                 .header("alg", "RS256")
                 .claim("sub", "42")
-                .claim(NatsuOAuth2Claims.SID, "auth-1")
+                .claim(OAuth2Claims.SID, "auth-1")
                 .build();
 
         org.mockito.Mockito.when(authorizationSupport.isActive("auth-1", "token"))

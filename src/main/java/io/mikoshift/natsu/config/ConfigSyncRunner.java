@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 /** Mirrors selected {@link NatsuProperties} values into {@code natsu_config} for DB-level enforcement. */
 @Component
 @RequiredArgsConstructor
-class NatsuConfigSyncRunner implements CommandLineRunner {
+class ConfigSyncRunner implements CommandLineRunner {
 
     static final String MAX_STORAGE_BYTES_PER_USER_KEY = "max_storage_bytes_per_user";
 

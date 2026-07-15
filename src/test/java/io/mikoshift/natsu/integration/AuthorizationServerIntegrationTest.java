@@ -8,8 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import io.mikoshift.natsu.TestcontainersConfiguration;
-import io.mikoshift.natsu.security.oauth2.NatsuJwtAuthenticationConverter;
-import io.mikoshift.natsu.security.oauth2.NatsuOAuth2Claims;
+import io.mikoshift.natsu.security.oauth2.CustomJwtAuthenticationConverter;
+import io.mikoshift.natsu.security.oauth2.OAuth2Claims;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,7 +49,7 @@ class AuthorizationServerIntegrationTest {
     private OAuth2AuthorizationService authorizationService;
 
     @Autowired
-    private NatsuJwtAuthenticationConverter jwtAuthenticationConverter;
+    private CustomJwtAuthenticationConverter jwtAuthenticationConverter;
 
     @Test
     void passwordGrantIssuesJwtWithSidClaim() throws Exception {
@@ -72,11 +72,11 @@ class AuthorizationServerIntegrationTest {
 
         String accessToken = JsonPath.read(result.getResponse().getContentAsString(), "$.access_token");
         Jwt jwt = jwtDecoder.decode(accessToken);
-        assertThat(jwt.getClaimAsString(NatsuOAuth2Claims.SID)).isNotBlank();
+        assertThat(jwt.getClaimAsString(OAuth2Claims.SID)).isNotBlank();
         assertThat(jwt.getSubject()).isNotBlank();
         assertThat(jwt.getClaimAsString("email")).isEqualTo(email);
 
-        OAuth2Authorization authorization = authorizationService.findById(jwt.getClaimAsString(NatsuOAuth2Claims.SID));
+        OAuth2Authorization authorization = authorizationService.findById(jwt.getClaimAsString(OAuth2Claims.SID));
         assertThat(authorization).isNotNull();
         assertThat(jwtAuthenticationConverter.convert(jwt)).isNotNull();
         SecurityContextHolder.clearContext();

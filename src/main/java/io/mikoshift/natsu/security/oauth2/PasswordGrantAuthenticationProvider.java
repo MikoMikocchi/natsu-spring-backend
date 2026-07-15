@@ -1,6 +1,6 @@
 package io.mikoshift.natsu.security.oauth2;
 
-import io.mikoshift.natsu.security.NatsuUserDetails;
+import io.mikoshift.natsu.security.AppUserDetails;
 import java.security.Principal;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -58,7 +58,7 @@ public class PasswordGrantAuthenticationProvider
         }
 
         OAuth2ClientAuthenticationToken clientPrincipal = clientPrincipal(passwordGrant, registeredClient);
-        if (!registeredClient.getAuthorizationGrantTypes().contains(NatsuAuthorizationGrantTypes.PASSWORD)) {
+        if (!registeredClient.getAuthorizationGrantTypes().contains(CustomAuthorizationGrantTypes.PASSWORD)) {
             throw new OAuth2AuthenticationException(OAuth2ErrorCodes.UNAUTHORIZED_CLIENT);
         }
 
@@ -78,10 +78,10 @@ public class PasswordGrantAuthenticationProvider
         OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
                 .id(UUID.randomUUID().toString())
                 .principalName(userDetails(userAuthentication).getUsername())
-                .authorizationGrantType(NatsuAuthorizationGrantTypes.PASSWORD)
+                .authorizationGrantType(CustomAuthorizationGrantTypes.PASSWORD)
                 .authorizedScopes(authorizedScopes)
                 .attribute(Principal.class.getName(), principalForStorage)
-                .attribute(NatsuOAuth2Claims.DEVICE_NAME, passwordGrant.getDeviceName());
+                .attribute(OAuth2Claims.DEVICE_NAME, passwordGrant.getDeviceName());
 
         OAuth2Authorization preliminaryAuthorization = authorizationBuilder.build();
 
@@ -92,7 +92,7 @@ public class PasswordGrantAuthenticationProvider
                 .authorizedScopes(authorizedScopes)
                 .authorization(preliminaryAuthorization)
                 .tokenType(org.springframework.security.oauth2.server.authorization.OAuth2TokenType.ACCESS_TOKEN)
-                .authorizationGrantType(NatsuAuthorizationGrantTypes.PASSWORD)
+                .authorizationGrantType(CustomAuthorizationGrantTypes.PASSWORD)
                 .authorizationGrant(passwordGrant)
                 .build();
 
@@ -124,7 +124,7 @@ public class PasswordGrantAuthenticationProvider
                 .authorizedScopes(authorizedScopes)
                 .authorization(preliminaryAuthorization)
                 .tokenType(org.springframework.security.oauth2.server.authorization.OAuth2TokenType.REFRESH_TOKEN)
-                .authorizationGrantType(NatsuAuthorizationGrantTypes.PASSWORD)
+                .authorizationGrantType(CustomAuthorizationGrantTypes.PASSWORD)
                 .authorizationGrant(passwordGrant)
                 .build();
 
@@ -149,8 +149,8 @@ public class PasswordGrantAuthenticationProvider
         return PasswordGrantAuthenticationToken.class.isAssignableFrom(authentication);
     }
 
-    private static NatsuUserDetails userDetails(Authentication userAuthentication) {
-        return (NatsuUserDetails) userAuthentication.getPrincipal();
+    private static AppUserDetails userDetails(Authentication userAuthentication) {
+        return (AppUserDetails) userAuthentication.getPrincipal();
     }
 
     private static OAuth2ClientAuthenticationToken clientPrincipal(
