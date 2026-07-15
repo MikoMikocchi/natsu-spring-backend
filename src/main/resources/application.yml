@@ -13,8 +13,8 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
-  flyway:
-    enabled: true
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
   jackson:
     property-naming-strategy: SNAKE_CASE
   servlet:

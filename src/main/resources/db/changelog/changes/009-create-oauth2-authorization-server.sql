@@ -1,3 +1,6 @@
+-- liquibase formatted sql
+
+-- changeset natsu:009-create-oauth2-authorization-server
 create table oauth2_registered_client (
     id                            varchar(100)  not null,
     client_id                     varchar(100)  not null,

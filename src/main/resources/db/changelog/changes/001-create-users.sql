@@ -1,3 +1,6 @@
+-- liquibase formatted sql
+
+-- changeset natsu:001-create-users
 create table users (
     id                      bigserial primary key,
     name                    varchar(255)  not null,
@@ -5,6 +8,7 @@ create table users (
     password_hash           varchar(255)  not null,
     reset_password_token    varchar(255),
     reset_password_sent_at  timestamptz,
+    dict_cache_version      bigint        not null default 0,
     created_at              timestamptz   not null default now(),
     updated_at              timestamptz   not null default now()
 );

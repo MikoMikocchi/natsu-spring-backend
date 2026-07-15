@@ -1,3 +1,6 @@
+-- liquibase formatted sql
+
+-- changeset natsu:008-enforce-document-storage-quota splitStatements:false
 -- Runtime settings mirrored from application config on startup (see NatsuConfigSyncRunner).
 create table natsu_config (
     key   varchar(255) primary key,

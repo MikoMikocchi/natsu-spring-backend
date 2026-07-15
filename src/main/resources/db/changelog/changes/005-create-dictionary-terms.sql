@@ -1,3 +1,6 @@
+-- liquibase formatted sql
+
+-- changeset natsu:005-create-dictionary-terms
 create table dictionary_terms (
     id             bigserial     primary key,
     dictionary_id  uuid          not null references dictionaries (id) on delete cascade,

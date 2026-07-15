@@ -1,3 +1,6 @@
+-- liquibase formatted sql
+
+-- changeset natsu:006-create-user-dictionary-settings
 -- Opt-out model: presence of a row means the dictionary is DISABLED for that user.
 create table user_dictionary_settings (
     id             bigserial    primary key,

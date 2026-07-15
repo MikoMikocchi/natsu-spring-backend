@@ -1,3 +1,6 @@
+-- liquibase formatted sql
+
+-- changeset natsu:002-create-reader-settings
 create table reader_settings (
     user_id                    bigint            primary key references users (id) on delete cascade,
     font_size_sp               double precision  not null default 16.0,

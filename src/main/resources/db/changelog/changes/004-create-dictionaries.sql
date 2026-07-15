@@ -1,3 +1,6 @@
+-- liquibase formatted sql
+
+-- changeset natsu:004-create-dictionaries
 create table dictionaries (
     id           uuid          primary key default gen_random_uuid(),
     catalog_id   varchar(255)  not null,
