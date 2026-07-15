@@ -52,16 +52,15 @@ class AuthorizationServerIntegrationTest {
     private CustomJwtAuthenticationConverter jwtAuthenticationConverter;
 
     @Test
-    void passwordGrantIssuesJwtWithSidClaim() throws Exception {
+    void loginIssuesJwtWithSidClaim() throws Exception {
         String email = "jwt-claims@example.com";
         OAuth2TestSupport.register(mockMvc, email);
 
-        MvcResult result = mockMvc.perform(post("/oauth2/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "password")
-                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
-                        .param("username", email)
-                        .param("password", OAuth2TestSupport.DEFAULT_PASSWORD))
+        MvcResult result = mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"%s"}
+                                """.formatted(email, OAuth2TestSupport.DEFAULT_PASSWORD)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.access_token").exists())
                 .andExpect(jsonPath("$.refresh_token").exists())
@@ -125,14 +124,13 @@ class AuthorizationServerIntegrationTest {
     }
 
     @Test
-    void invalidCredentialsReturnBadRequest() throws Exception {
-        mockMvc.perform(post("/oauth2/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "password")
-                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
-                        .param("username", "nobody@example.com")
-                        .param("password", "wrong"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("invalid_grant"));
+    void invalidCredentialsReturnUnauthorized() throws Exception {
+        mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"nobody@example.com","password":"wrong"}
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errors.base").exists());
     }
 }

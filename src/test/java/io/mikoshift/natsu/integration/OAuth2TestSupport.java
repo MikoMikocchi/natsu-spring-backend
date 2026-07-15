@@ -30,12 +30,11 @@ public final class OAuth2TestSupport {
     }
 
     public static TokenPair login(MockMvc mockMvc, String email, String password, String userAgent) throws Exception {
-        var request = post("/oauth2/token")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("grant_type", "password")
-                .param("client_id", CLIENT_ID)
-                .param("username", email)
-                .param("password", password)
+        var request = post("/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"email":"%s","password":"%s"}
+                        """.formatted(email, password))
                 .header("User-Agent", userAgent);
         MvcResult result = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
         SecurityContextHolder.clearContext();
@@ -49,12 +48,11 @@ public final class OAuth2TestSupport {
 
     public static String obtainAccessToken(MockMvc mockMvc, String email, String password, String userAgent)
             throws Exception {
-        var request = post("/oauth2/token")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("grant_type", "password")
-                .param("client_id", CLIENT_ID)
-                .param("username", email)
-                .param("password", password);
+        var request = post("/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"email":"%s","password":"%s"}
+                        """.formatted(email, password));
         if (userAgent != null) {
             request = request.header("User-Agent", userAgent);
         }
@@ -64,12 +62,11 @@ public final class OAuth2TestSupport {
     }
 
     public static String obtainRefreshToken(MockMvc mockMvc, String email, String password) throws Exception {
-        MvcResult result = mockMvc.perform(post("/oauth2/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "password")
-                        .param("client_id", CLIENT_ID)
-                        .param("username", email)
-                        .param("password", password))
+        MvcResult result = mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"%s"}
+                                """.formatted(email, password)))
                 .andExpect(status().isOk())
                 .andReturn();
         SecurityContextHolder.clearContext();
@@ -78,12 +75,11 @@ public final class OAuth2TestSupport {
 
     public static TokenPair registerAndLogin(MockMvc mockMvc, String email) throws Exception {
         register(mockMvc, email);
-        MvcResult result = mockMvc.perform(post("/oauth2/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "password")
-                        .param("client_id", CLIENT_ID)
-                        .param("username", email)
-                        .param("password", DEFAULT_PASSWORD))
+        MvcResult result = mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"%s"}
+                                """.formatted(email, DEFAULT_PASSWORD)))
                 .andExpect(status().isOk())
                 .andReturn();
         SecurityContextHolder.clearContext();

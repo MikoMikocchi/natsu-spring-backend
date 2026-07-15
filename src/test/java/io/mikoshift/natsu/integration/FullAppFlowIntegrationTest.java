@@ -337,14 +337,13 @@ class FullAppFlowIntegrationTest {
         mockMvc.perform(get("/userinfo").header("Authorization", "Bearer " + finalToken))
                 .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post("/oauth2/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "password")
-                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
-                        .param("username", email)
-                        .param("password", resetPassword))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("invalid_grant"));
+        mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"%s"}
+                                """.formatted(email, resetPassword)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errors.base").exists());
     }
 
     private void awaitImportReady(String token, String documentId) {

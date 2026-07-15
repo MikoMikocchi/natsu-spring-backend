@@ -1,6 +1,5 @@
 package io.mikoshift.natsu.config;
 
-import io.mikoshift.natsu.security.oauth2.CustomAuthorizationGrantTypes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -34,7 +33,6 @@ public class RegisteredClientInitializer implements ApplicationRunner {
                 .clientId(natsuProperties.oauth2().clientId())
                 .clientName("Natsu Mobile")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
-                .authorizationGrantType(CustomAuthorizationGrantTypes.PASSWORD)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .scope("profile")
                 .clientSettings(ClientSettings.builder()

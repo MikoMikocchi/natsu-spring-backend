@@ -44,47 +44,42 @@ class RateLimitIntegrationTest {
         String email = "per-email-throttle@example.com";
 
         for (int i = 0; i < 2; i++) {
-            mockMvc.perform(post("/oauth2/token")
-                            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                            .param("grant_type", "password")
-                            .param("client_id", OAuth2TestSupport.CLIENT_ID)
-                            .param("username", email)
-                            .param("password", "wrong-password"))
-                    .andExpect(status().isBadRequest());
+            mockMvc.perform(post("/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"email":"%s","password":"wrong-password"}
+                                    """.formatted(email)))
+                    .andExpect(status().isUnauthorized());
         }
 
-        mockMvc.perform(post("/oauth2/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "password")
-                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
-                        .param("username", email)
-                        .param("password", "wrong-password"))
+        mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"wrong-password"}
+                                """.formatted(email)))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"))
                 .andExpect(jsonPath("$.errors.base").exists());
 
-        mockMvc.perform(post("/oauth2/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "password")
-                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
-                        .param("username", "someone-else@example.com")
-                        .param("password", "wrong-password"))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"someone-else@example.com","password":"wrong-password"}
+                                """))
+                .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post("/oauth2/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "password")
-                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
-                        .param("username", "yet-another@example.com")
-                        .param("password", "wrong-password"))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"yet-another@example.com","password":"wrong-password"}
+                                """))
+                .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post("/oauth2/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "password")
-                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
-                        .param("username", "per-ip-overflow@example.com")
-                        .param("password", "wrong-password"))
+        mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"per-ip-overflow@example.com","password":"wrong-password"}
+                                """))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"))
                 .andExpect(jsonPath("$.errors.base").exists());

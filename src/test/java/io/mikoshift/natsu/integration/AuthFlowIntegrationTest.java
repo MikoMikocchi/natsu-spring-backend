@@ -270,21 +270,19 @@ class AuthFlowIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/oauth2/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "password")
-                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
-                        .param("username", email)
-                        .param("password", "password123"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("invalid_grant"));
+        mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"password123"}
+                                """.formatted(email)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.errors.base").exists());
 
-        mockMvc.perform(post("/oauth2/token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("grant_type", "password")
-                        .param("client_id", OAuth2TestSupport.CLIENT_ID)
-                        .param("username", email)
-                        .param("password", "newpassword456"))
+        mockMvc.perform(post("/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"%s","password":"newpassword456"}
+                                """.formatted(email)))
                 .andExpect(status().isOk());
     }
 }

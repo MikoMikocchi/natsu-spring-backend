@@ -28,7 +28,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private static final String[] PUBLIC_POST_ROUTES = {
-        "/v1/auth/register", "/v1/auth/password/forgot", "/v1/auth/password/reset"
+        "/v1/auth/login", "/v1/auth/register", "/v1/auth/password/forgot", "/v1/auth/password/reset"
     };
 
     private static final String[] PUBLIC_GET_ROUTES = {

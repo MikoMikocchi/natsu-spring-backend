@@ -1,7 +1,6 @@
 package io.mikoshift.natsu.security;
 
 import io.mikoshift.natsu.config.NatsuProperties;
-import io.mikoshift.natsu.security.oauth2.AppOAuth2ParameterNames;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,14 +17,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Throttles auth endpoints: per-IP on all protected routes, plus per-email (login) and
- * per-refresh-token (refresh) on {@code /oauth2/token} where those keys live in the form body.
+ * Throttles auth endpoints: per-IP on all protected routes, plus per-refresh-token (refresh) on
+ * {@code /oauth2/token}. Per-email login throttling is enforced in {@link
+ * io.mikoshift.natsu.service.auth.LoginService}.
  */
 @Component
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final Map<String, String> LIMITED_PATHS = Map.of(
+            "/v1/auth/login", "login",
             "/v1/auth/register", "register",
             "/v1/auth/password/forgot", "password-reset",
             "/v1/auth/password/reset", "password-reset");
@@ -59,18 +60,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private boolean rejectOAuth2TokenRequest(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         String grantType = request.getParameter(OAuth2ParameterNames.GRANT_TYPE);
-        if (AppOAuth2ParameterNames.isPasswordGrant(grantType)) {
-            String username = request.getParameter(AppOAuth2ParameterNames.USERNAME);
-            if (StringUtils.hasText(username)
-                    && !rateLimiter.tryConsume(
-                            "login-email",
-                            username.trim().toLowerCase(),
-                            properties.rateLimit().loginEmail())) {
-                writeTooManyRequests(
-                        response, properties.rateLimit().loginEmail().windowSeconds());
-                return true;
-            }
-        } else if (AppOAuth2ParameterNames.isRefreshGrant(grantType)) {
+        if (OAuth2ParameterNames.REFRESH_TOKEN.equals(grantType)) {
             String refreshToken = request.getParameter(OAuth2ParameterNames.REFRESH_TOKEN);
             if (StringUtils.hasText(refreshToken)
                     && !rateLimiter.tryConsume(
@@ -94,7 +84,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             if (OAuth2ParameterNames.REFRESH_TOKEN.equals(grantType)) {
                 return "refresh";
             }
-            return "login";
+            return null;
         }
         return LIMITED_PATHS.get(request.getRequestURI());
     }

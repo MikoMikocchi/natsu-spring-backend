@@ -1,16 +1,11 @@
 package io.mikoshift.natsu.config;
 
 import io.mikoshift.natsu.security.RateLimitFilter;
-import io.mikoshift.natsu.security.oauth2.DeviceNameRequestFilter;
-import io.mikoshift.natsu.security.oauth2.PasswordGrantAuthenticationConverter;
-import io.mikoshift.natsu.security.oauth2.PasswordGrantAuthenticationProvider;
 import io.mikoshift.natsu.security.oauth2.PublicClientAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -29,7 +24,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class AuthorizationServerConfig {
 
     private final RateLimitFilter rateLimitFilter;
-    private final DeviceNameRequestFilter deviceNameRequestFilter;
     private final PublicClientAuthenticationFilter publicClientAuthenticationFilter;
 
     @Bean
@@ -40,14 +34,8 @@ public class AuthorizationServerConfig {
             OAuth2AuthorizationService authorizationService,
             OAuth2AuthorizationConsentService authorizationConsentService,
             AuthorizationServerSettings authorizationServerSettings,
-            OAuth2TokenGenerator<?> tokenGenerator,
-            @Lazy AuthenticationManager authenticationManager)
+            OAuth2TokenGenerator<?> tokenGenerator)
             throws Exception {
-        PasswordGrantAuthenticationConverter passwordGrantAuthenticationConverter =
-                new PasswordGrantAuthenticationConverter(registeredClientRepository);
-        PasswordGrantAuthenticationProvider passwordGrantAuthenticationProvider =
-                new PasswordGrantAuthenticationProvider(
-                        authenticationManager, authorizationService, tokenGenerator, registeredClientRepository);
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
 
         http.securityMatcher("/oauth2/**", "/.well-known/**")
@@ -56,10 +44,7 @@ public class AuthorizationServerConfig {
                         .authorizationService(authorizationService)
                         .authorizationConsentService(authorizationConsentService)
                         .authorizationServerSettings(authorizationServerSettings)
-                        .tokenGenerator(tokenGenerator)
-                        .tokenEndpoint(tokenEndpoint -> tokenEndpoint
-                                .accessTokenRequestConverter(passwordGrantAuthenticationConverter)
-                                .authenticationProvider(passwordGrantAuthenticationProvider)))
+                        .tokenGenerator(tokenGenerator))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/oauth2/token", "/oauth2/revoke", "/oauth2/jwks", "/.well-known/**")
                         .permitAll()
@@ -71,7 +56,6 @@ public class AuthorizationServerConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(deviceNameRequestFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(publicClientAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
