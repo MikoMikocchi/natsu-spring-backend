@@ -1,7 +1,8 @@
 package io.mikoshift.natsu.security.oauth2;
 
-import io.mikoshift.natsu.security.NatsuUserDetails;
+import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.repository.UserRepository;
+import io.mikoshift.natsu.security.NatsuUserDetails;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
@@ -24,11 +25,11 @@ public class NatsuOAuth2TokenCustomizer implements OAuth2TokenCustomizer<JwtEnco
             }
         }
 
-        NatsuUserDetails userDetails = resolveUserDetails(context);
-        if (userDetails != null) {
-            context.getClaims().subject(userDetails.getUser().getId().toString());
-            context.getClaims().claim("email", userDetails.getUser().getEmail());
-            context.getClaims().claim("name", userDetails.getUser().getName());
+        User user = resolveUser(context);
+        if (user != null) {
+            context.getClaims().subject(user.getId().toString());
+            context.getClaims().claim("email", user.getEmail());
+            context.getClaims().claim("name", user.getName());
         }
 
         if (context.getAuthorizedScopes().contains(OidcParameterNames.ID_TOKEN)) {
@@ -36,15 +37,14 @@ public class NatsuOAuth2TokenCustomizer implements OAuth2TokenCustomizer<JwtEnco
         }
     }
 
-    private NatsuUserDetails resolveUserDetails(JwtEncodingContext context) {
+    private User resolveUser(JwtEncodingContext context) {
         Object principal = context.getPrincipal().getPrincipal();
         if (principal instanceof NatsuUserDetails userDetails) {
-            return userDetails;
+            return userDetails.getUser();
         }
         if (context.getAuthorization() != null) {
             return userRepository
                     .findByEmailIgnoreCase(context.getAuthorization().getPrincipalName())
-                    .map(NatsuUserDetails::new)
                     .orElse(null);
         }
         return null;

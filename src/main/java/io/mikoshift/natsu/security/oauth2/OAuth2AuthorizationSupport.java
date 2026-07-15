@@ -23,27 +23,17 @@ public class OAuth2AuthorizationSupport {
         if (authorization == null) {
             return false;
         }
-        // Spring AS marks tokens as invalidated in-place (saves the record with updated metadata)
-        // rather than deleting the row, so we must check each token's active state explicitly.
-        //
-        // Revoking a refresh token via /oauth2/revoke does NOT invalidate the access token record —
-        // only the refresh token entry is marked. We therefore treat the whole session as dead if
-        // either the access token or the refresh token has been invalidated or expired.
-        //
-        // After refresh-token rotation the authorization id (sid) stays the same but the stored
-        // access token value changes; reject JWTs that no longer match the current access token.
+
         OAuth2Authorization.Token<OAuth2AccessToken> accessToken = authorization.getAccessToken();
-        if (accessToken == null || accessToken.isInvalidated() || accessToken.isExpired()) {
+        if (accessToken == null
+                || accessToken.isInvalidated()
+                || accessToken.isExpired()
+                || !accessToken.getToken().getTokenValue().equals(accessTokenValue)) {
             return false;
         }
-        if (!accessToken.getToken().getTokenValue().equals(accessTokenValue)) {
-            return false;
-        }
+
         OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken = authorization.getRefreshToken();
-        if (refreshToken != null && (refreshToken.isInvalidated() || refreshToken.isExpired())) {
-            return false;
-        }
-        return true;
+        return refreshToken == null || (!refreshToken.isInvalidated() && !refreshToken.isExpired());
     }
 
     public List<AuthorizationSession> findActiveSessionsForUser(User user) {
@@ -71,14 +61,6 @@ public class OAuth2AuthorizationSupport {
                 authorizationService.remove(authorization);
             }
         }
-    }
-
-    public void revokeForUser(User user, String authorizationId) {
-        OAuth2Authorization authorization = authorizationService.findById(authorizationId);
-        if (authorization == null || !user.getEmail().equalsIgnoreCase(authorization.getPrincipalName())) {
-            return;
-        }
-        authorizationService.remove(authorization);
     }
 
     public String deviceName(OAuth2Authorization authorization) {

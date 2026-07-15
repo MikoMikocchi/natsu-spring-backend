@@ -2,6 +2,7 @@ package io.mikoshift.natsu.controller.v1;
 
 import io.mikoshift.natsu.dto.response.DeviceSessionResponse;
 import io.mikoshift.natsu.entity.User;
+import io.mikoshift.natsu.security.oauth2.NatsuAuthenticationDetails;
 import io.mikoshift.natsu.service.auth.DeviceSessionService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +34,8 @@ public class DeviceSessionController {
     }
 
     private static String currentAuthorizationId(Authentication authentication) {
-        if (authentication.getDetails() instanceof String sid) {
-            return sid;
+        if (authentication.getDetails() instanceof NatsuAuthenticationDetails details) {
+            return details.sessionId();
         }
         return null;
     }

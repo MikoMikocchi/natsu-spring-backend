@@ -16,11 +16,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.test.context.TestPropertySource;
@@ -46,9 +44,6 @@ class AuthorizationServerIntegrationTest {
 
     @Autowired
     private JwtDecoder jwtDecoder;
-
-    @Autowired
-    private AuthenticationManager jwtAuthenticationManager;
 
     @Autowired
     private OAuth2AuthorizationService authorizationService;
@@ -85,8 +80,6 @@ class AuthorizationServerIntegrationTest {
                 authorizationService.findById(jwt.getClaimAsString(NatsuOAuth2Claims.SID));
         assertThat(authorization).isNotNull();
         assertThat(jwtAuthenticationConverter.convert(jwt)).isNotNull();
-        assertThat(jwtAuthenticationManager.authenticate(new BearerTokenAuthenticationToken(accessToken)))
-                .isNotNull();
         SecurityContextHolder.clearContext();
 
         mockMvc.perform(get("/v1/auth/sessions").header("Authorization", "Bearer " + accessToken))

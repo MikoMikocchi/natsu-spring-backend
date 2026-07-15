@@ -45,7 +45,7 @@ class NatsuJwtAuthenticationConverterTest {
                 (UsernamePasswordAuthenticationToken) converter.convert(jwt);
 
         assertThat(authentication.getPrincipal()).isEqualTo(user);
-        assertThat(authentication.getDetails()).isEqualTo("auth-1");
+        assertThat(authentication.getDetails()).isEqualTo(new NatsuAuthenticationDetails("auth-1"));
     }
 
     @Test

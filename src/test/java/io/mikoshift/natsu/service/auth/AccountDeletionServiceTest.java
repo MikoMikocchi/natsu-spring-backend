@@ -12,6 +12,7 @@ import io.mikoshift.natsu.repository.UserRepository;
 import io.mikoshift.natsu.security.oauth2.OAuth2AuthorizationSupport;
 import io.mikoshift.natsu.service.storage.PackageStorageService;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +62,7 @@ class AccountDeletionServiceTest {
 
     @Test
     void rejectsDeletionWithWrongPassword() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrong", "hashed")).thenReturn(false);
 
         assertThatThrownBy(() -> accountDeletionService.deleteAccount(user, "wrong"))
@@ -73,6 +75,7 @@ class AccountDeletionServiceTest {
     void deletesUserAndPurgesPackageFilesOnceTheTransactionCommits() {
         UUID documentA = UUID.randomUUID();
         UUID documentB = UUID.randomUUID();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password123", "hashed")).thenReturn(true);
         when(documentRepository.findIdsByUser(user)).thenReturn(List.of(documentA, documentB));
 

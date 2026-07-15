@@ -7,6 +7,7 @@ import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.ValidationException;
 import io.mikoshift.natsu.repository.UserRepository;
 import io.mikoshift.natsu.security.oauth2.OAuth2AuthorizationSupport;
+import io.mikoshift.natsu.util.TransactionHooks;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -21,10 +22,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-/** Password change/forgot/reset. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -40,17 +38,18 @@ public class PasswordService {
     private final Clock clock;
 
     @Transactional
-    public void changePassword(User user, ChangePasswordRequest request) {
+    public void changePassword(User authenticatedUser, ChangePasswordRequest request) {
+        User user = userRepository
+                .findById(authenticatedUser.getId())
+                .orElseThrow(() -> ValidationException.of("base", "User not found"));
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
             throw ValidationException.of("current_password", "is invalid");
         }
         if (!request.password().equals(request.passwordConfirmation())) {
             throw ValidationException.of("password_confirmation", "doesn't match Password");
         }
-        // user arrives detached (loaded by the auth filter in an earlier, already-closed
-        // transaction), so mutating it here does nothing without an explicit save.
         user.setPasswordHash(passwordEncoder.encode(request.password()));
-        userRepository.save(user);
+        authorizationSupport.revokeAllForUser(user);
     }
 
     @Transactional
@@ -59,30 +58,12 @@ public class PasswordService {
             String rawToken = generateToken();
             user.setResetPasswordToken(hashToken(rawToken));
             user.setResetPasswordSentAt(clock.instant());
-            // Deferred until the transaction actually commits: sending inline here would hold
-            // the DB connection open for the full SMTP round-trip, and -- worse -- could mail out
-            // a working-looking reset link whose token never made it to the database if the
-            // commit subsequently failed. registerSynchronization (rather than calling another
-            // @Transactional method on this bean) is used because self-invocation bypasses the
-            // proxy and silently runs in the same transaction anyway.
             String userEmail = user.getEmail();
             String userName = user.getName();
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    sendResetEmail(userEmail, userName, rawToken);
-                }
-            });
+            TransactionHooks.afterCommit(() -> sendResetEmail(userEmail, userName, rawToken));
         });
     }
 
-    /**
-     * Best-effort send: a mail transport failure (e.g. no local SMTP catcher running) is logged and
-     * swallowed rather than propagated. The reset token has already been committed regardless, and
-     * letting this bubble up would turn an SMTP outage into a signal that distinguishes "account
-     * exists" (500) from "account doesn't exist" (200) -- the opposite of what {@link
-     * #forgotPassword} is trying to guarantee. The controller always reports success either way.
-     */
     private void sendResetEmail(String userEmail, String userName, String rawToken) {
         String resetUrl = properties.passwordResetUrlTemplate().replace("{token}", rawToken);
         SimpleMailMessage message = new SimpleMailMessage();

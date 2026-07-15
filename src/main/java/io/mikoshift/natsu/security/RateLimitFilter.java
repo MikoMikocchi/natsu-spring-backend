@@ -1,6 +1,7 @@
 package io.mikoshift.natsu.security;
 
 import io.mikoshift.natsu.config.NatsuProperties;
+import io.mikoshift.natsu.security.oauth2.NatsuOAuth2ParameterNames;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,18 +13,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Per-IP throttling on the auth endpoints worth protecting from brute-forcing/spam: login,
- * registration, password reset, and token refresh. Not general per-route/per-IP throttling across
- * the whole API -- that's explicitly out of scope for v1.
- *
- * <p>Per-email (login) and per-refresh-token (refresh) throttles need a value from the parsed
- * request body, which isn't available at this raw servlet-filter layer without wrapping the
- * request; those are enforced downstream in the controllers instead, via the same {@link
- * RateLimiter} bean, so all throttling shares one bucket store and one 429 response shape.
+ * Throttles auth endpoints: per-IP on all protected routes, plus per-email (login) and
+ * per-refresh-token (refresh) on {@code /oauth2/token} where those keys live in the form body.
  */
 @Component
 @RequiredArgsConstructor
@@ -50,7 +46,39 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 return;
             }
         }
+
+        if ("/oauth2/token".equals(request.getRequestURI()) && "POST".equalsIgnoreCase(request.getMethod())) {
+            if (rejectOAuth2TokenRequest(request, response)) {
+                return;
+            }
+        }
+
         filterChain.doFilter(request, response);
+    }
+
+    private boolean rejectOAuth2TokenRequest(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        String grantType = request.getParameter(OAuth2ParameterNames.GRANT_TYPE);
+        if (NatsuOAuth2ParameterNames.isPasswordGrant(grantType)) {
+            String username = request.getParameter(NatsuOAuth2ParameterNames.USERNAME);
+            if (StringUtils.hasText(username)
+                    && !rateLimiter.tryConsume(
+                            "login-email",
+                            username.trim().toLowerCase(),
+                            properties.rateLimit().loginEmail())) {
+                writeTooManyRequests(response, properties.rateLimit().loginEmail().windowSeconds());
+                return true;
+            }
+        } else if (NatsuOAuth2ParameterNames.isRefreshGrant(grantType)) {
+            String refreshToken = request.getParameter(OAuth2ParameterNames.REFRESH_TOKEN);
+            if (StringUtils.hasText(refreshToken)
+                    && !rateLimiter.tryConsume(
+                            "refresh-token", refreshToken, properties.rateLimit().refreshToken())) {
+                writeTooManyRequests(response, properties.rateLimit().refreshToken().windowSeconds());
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String resolveCategory(HttpServletRequest request) {

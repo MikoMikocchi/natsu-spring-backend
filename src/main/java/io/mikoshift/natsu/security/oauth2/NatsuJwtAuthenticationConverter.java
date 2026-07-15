@@ -32,7 +32,7 @@ public class NatsuJwtAuthenticationConverter implements Converter<Jwt, AbstractA
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(user, jwt, List.of());
-        authentication.setDetails(sid);
+        authentication.setDetails(new NatsuAuthenticationDetails(sid));
         return authentication;
     }
 }

@@ -2,7 +2,6 @@ package io.mikoshift.natsu.config;
 
 import io.mikoshift.natsu.security.RateLimitFilter;
 import io.mikoshift.natsu.security.oauth2.DeviceNameRequestFilter;
-import io.mikoshift.natsu.security.oauth2.OAuth2TokenRateLimitFilter;
 import io.mikoshift.natsu.security.oauth2.PasswordGrantAuthenticationConverter;
 import io.mikoshift.natsu.security.oauth2.PasswordGrantAuthenticationProvider;
 import io.mikoshift.natsu.security.oauth2.PublicClientAuthenticationFilter;
@@ -24,16 +23,12 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AndRequestMatcher;
-import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @RequiredArgsConstructor
 public class AuthorizationServerConfig {
 
     private final RateLimitFilter rateLimitFilter;
-    private final OAuth2TokenRateLimitFilter oauth2TokenRateLimitFilter;
     private final DeviceNameRequestFilter deviceNameRequestFilter;
     private final PublicClientAuthenticationFilter publicClientAuthenticationFilter;
 
@@ -59,11 +54,7 @@ public class AuthorizationServerConfig {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer();
 
-        RequestMatcher userInfoMatcher = request -> "/userinfo".equals(request.getRequestURI());
-
-        http.securityMatcher(new AndRequestMatcher(
-                        authorizationServerConfigurer.getEndpointsMatcher(),
-                        new NegatedRequestMatcher(userInfoMatcher)))
+        http.securityMatcher("/oauth2/**", "/.well-known/**")
                 .with(
                         authorizationServerConfigurer,
                         authorizationServer -> authorizationServer
@@ -86,7 +77,6 @@ public class AuthorizationServerConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(oauth2TokenRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(deviceNameRequestFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(publicClientAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
