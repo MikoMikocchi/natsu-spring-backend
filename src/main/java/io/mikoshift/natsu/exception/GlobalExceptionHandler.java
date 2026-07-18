@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors().forEach(fieldError -> errors.computeIfAbsent(
                         toSnakeCase(fieldError.getField()), key -> new ArrayList<>())
                 .add(fieldError.getDefaultMessage()));
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("errors", errors));
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(Map.of("errors", errors));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
             String field = path.contains(".") ? path.substring(path.lastIndexOf('.') + 1) : path;
             errors.computeIfAbsent(toSnakeCase(field), key -> new ArrayList<>()).add(violation.getMessage());
         });
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of("errors", errors));
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(Map.of("errors", errors));
     }
 
     @ExceptionHandler(AccessDeniedException.class)

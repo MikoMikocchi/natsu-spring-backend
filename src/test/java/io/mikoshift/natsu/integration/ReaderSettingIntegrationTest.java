@@ -121,7 +121,7 @@ class ReaderSettingIntegrationTest {
                         .content("""
                                 {"font_size_sp":5.0,"updated_at_ms":1000}
                                 """))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.errors.font_size_sp").exists());
     }
 

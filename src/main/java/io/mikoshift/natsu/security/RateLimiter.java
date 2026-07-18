@@ -1,9 +1,7 @@
 package io.mikoshift.natsu.security;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import io.mikoshift.natsu.config.NatsuProperties;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentMap;
@@ -40,7 +38,7 @@ public class RateLimiter {
     private static Bucket newBucket(NatsuProperties.RateLimit.Bucket config) {
         Duration window = Duration.ofSeconds(config.windowSeconds());
         return Bucket.builder()
-                .addLimit(Bandwidth.classic(config.capacity(), Refill.greedy(config.capacity(), window)))
+                .addLimit(limit -> limit.capacity(config.capacity()).refillGreedy(config.capacity(), window))
                 .build();
     }
 }

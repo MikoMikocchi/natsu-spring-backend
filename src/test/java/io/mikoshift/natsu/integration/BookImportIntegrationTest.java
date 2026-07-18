@@ -177,7 +177,7 @@ class BookImportIntegrationTest {
                 "file", "book.pdf", "application/pdf", "irrelevant".getBytes(StandardCharsets.UTF_8));
 
         mockMvc.perform(multipart("/v1/documents/import").file(file).header("Authorization", "Bearer " + token))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
     }
 
     @Test
@@ -190,7 +190,7 @@ class BookImportIntegrationTest {
         mockMvc.perform(multipart(HttpMethod.PUT, "/v1/documents/" + documentId + "/package")
                         .file(invalidZip)
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
 
         byte[] validZip = buildZip(Map.of("manifest.json", "{\"version\":1,\"sections\":[]}"));
         MockMultipartFile validPackage = new MockMultipartFile("package", "package.zip", "application/zip", validZip);

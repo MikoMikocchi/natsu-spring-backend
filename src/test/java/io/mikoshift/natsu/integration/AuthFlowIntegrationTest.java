@@ -159,7 +159,7 @@ class AuthFlowIntegrationTest {
                         .content("""
                                 {"name":"A","email":"dup@example.com","password":"password123","password_confirmation":"nope"}
                                 """))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.errors.password_confirmation").exists());
 
         mockMvc.perform(post("/v1/auth/register")
@@ -174,7 +174,7 @@ class AuthFlowIntegrationTest {
                         .content("""
                                 {"name":"B","email":"dup@example.com","password":"password123","password_confirmation":"password123"}
                                 """))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.errors.email").exists());
     }
 
