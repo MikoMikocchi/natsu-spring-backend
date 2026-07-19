@@ -57,7 +57,7 @@ FROM eclipse-temurin:26-jre AS final
 # to EPUB before handing off to EpubImporter). Installed from the base image's own apt repos
 # rather than pinning a specific Pandoc version -- docx/rtf->epub conversion has been stable
 # across Pandoc releases for years, so whatever Debian ships alongside this Temurin base is fine.
-RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl pandoc && rm -rf /var/lib/apt/lists/*
 
 # Dedicated non-root user to run the app -- standard container hardening,
 # avoids running application code as root inside the container. UID/GID
@@ -79,14 +79,8 @@ USER natsu:natsu
 # not use the Spring Boot default of 8080).
 EXPOSE 3000
 
-# No Actuator dependency in pom.xml today, so there is no real /actuator/health
-# endpoint to check against. Rather than add a whole new dependency just to
-# back a HEALTHCHECK, or wire up a TCP-only check that would just confirm the
-# port is listening (not that the app is actually healthy -- a Spring Boot app
-# can accept TCP connections during startup before the context is ready),
-# HEALTHCHECK is deliberately omitted. If Actuator gets added for other reasons
-# later, add:
-#   HEALTHCHECK --interval=30s --timeout=3s --start-period=30s \
-#     CMD wget -qO- http://localhost:3000/actuator/health | grep -q '"UP"' || exit 1
+# Readiness (not raw TCP) confirms Spring context is up and Postgres is reachable.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s \
+  CMD curl -fsS http://localhost:3000/actuator/health/readiness || exit 1
 
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

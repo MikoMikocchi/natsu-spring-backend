@@ -32,7 +32,12 @@ public class SecurityConfig {
     };
 
     private static final String[] PUBLIC_GET_ROUTES = {
-        "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**"
+        "/actuator/health",
+        "/actuator/health/**",
+        "/v3/api-docs",
+        "/v3/api-docs/**",
+        "/swagger-ui.html",
+        "/swagger-ui/**"
     };
 
     private final RateLimitFilter rateLimitFilter;
