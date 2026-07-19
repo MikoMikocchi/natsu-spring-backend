@@ -43,8 +43,8 @@ public class TokenIssuanceService {
     private final NatsuProperties natsuProperties;
 
     public TokenResponse issueTokens(Authentication userAuthentication, String deviceName) {
-        RegisteredClient registeredClient =
-                registeredClientRepository.findByClientId(natsuProperties.oauth2().clientId());
+        RegisteredClient registeredClient = registeredClientRepository.findByClientId(
+                natsuProperties.oauth2().clientId());
         if (registeredClient == null) {
             throw new IllegalStateException("Registered OAuth2 client is not configured");
         }

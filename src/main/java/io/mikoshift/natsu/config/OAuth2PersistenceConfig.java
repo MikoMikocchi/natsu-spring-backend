@@ -52,8 +52,7 @@ public class OAuth2PersistenceConfig {
     }
 
     @Bean
-    OAuth2TokenGenerator<?> tokenGenerator(
-            JWKSource<SecurityContext> jwkSource, JwtTokenCustomizer jwtCustomizer) {
+    OAuth2TokenGenerator<?> tokenGenerator(JWKSource<SecurityContext> jwkSource, JwtTokenCustomizer jwtCustomizer) {
         JwtGenerator jwtGenerator = new JwtGenerator(new NimbusJwtEncoder(jwkSource));
         jwtGenerator.setJwtCustomizer(jwtCustomizer);
         OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();

@@ -48,9 +48,8 @@ public final class OAuth2TestSupport {
 
     public static String obtainAccessToken(MockMvc mockMvc, String email, String password, String userAgent)
             throws Exception {
-        var request = post("/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+        var request =
+                post("/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content("""
                         {"email":"%s","password":"%s"}
                         """.formatted(email, password));
         if (userAgent != null) {

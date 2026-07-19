@@ -113,13 +113,11 @@ class FullAppFlowIntegrationTest {
                         .header("User-Agent", "e2e-phone")
                         .content("""
                                 {"name":"E2E Reader","email":"%s","password":"%s","password_confirmation":"%s"}
-                                """
-                                .formatted(email, initialPassword, initialPassword)))
+                                """.formatted(email, initialPassword, initialPassword)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.user.email").value(email));
 
-        OAuth2TestSupport.TokenPair tokens =
-                OAuth2TestSupport.login(mockMvc, email, initialPassword, "e2e-phone");
+        OAuth2TestSupport.TokenPair tokens = OAuth2TestSupport.login(mockMvc, email, initialPassword, "e2e-phone");
 
         mockMvc.perform(get("/userinfo").header("Authorization", "Bearer " + tokens.accessToken()))
                 .andExpect(status().isOk())
@@ -205,9 +203,8 @@ class FullAppFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(header().exists("X-Package-Sha256"));
 
-        byte[] packageBytes = mockMvc.perform(
-                        get("/v1/documents/" + documentId + "/package")
-                                .header("Authorization", "Bearer " + tokens.accessToken()))
+        byte[] packageBytes = mockMvc.perform(get("/v1/documents/" + documentId + "/package")
+                        .header("Authorization", "Bearer " + tokens.accessToken()))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -228,8 +225,7 @@ class FullAppFlowIntegrationTest {
                                   "last_read_block_index":1,"last_read_block_char_offset":5,
                                   "updated_at_ms":%d,"deleted":false
                                 }]}
-                                """
-                                .formatted(documentId, uniqueTitle, documentUpdatedAtMs + 1000)))
+                                """.formatted(documentId, uniqueTitle, documentUpdatedAtMs + 1000)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.documents[0].last_read_char_offset").value(42));
 
@@ -249,7 +245,8 @@ class FullAppFlowIntegrationTest {
                         .header("Authorization", "Bearer " + tokens.accessToken())
                         .param("since", "0"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.documents[?(@.id == '" + documentId + "')]").exists());
+                .andExpect(
+                        jsonPath("$.documents[?(@.id == '" + documentId + "')]").exists());
 
         assertThat(documentTitle).isEqualTo("novel");
 
@@ -280,8 +277,7 @@ class FullAppFlowIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"token":"%s","password":"%s","password_confirmation":"%s"}
-                                """
-                                .formatted(resetToken, resetPassword, resetPassword)))
+                                """.formatted(resetToken, resetPassword, resetPassword)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/userinfo").header("Authorization", "Bearer " + tokens.accessToken()))
@@ -289,8 +285,7 @@ class FullAppFlowIntegrationTest {
         mockMvc.perform(get("/userinfo").header("Authorization", "Bearer " + secondDevice.accessToken()))
                 .andExpect(status().isUnauthorized());
 
-        OAuth2TestSupport.TokenPair afterReset =
-                OAuth2TestSupport.login(mockMvc, email, resetPassword, "e2e-phone");
+        OAuth2TestSupport.TokenPair afterReset = OAuth2TestSupport.login(mockMvc, email, resetPassword, "e2e-phone");
 
         // --- 7. Refresh & revoke ---
         MvcResult refreshResult = mockMvc.perform(post("/oauth2/token")
@@ -355,7 +350,8 @@ class FullAppFlowIntegrationTest {
                             .andReturn()
                             .getResponse()
                             .getContentAsString();
-                    assertThat((String) JsonPath.read(response, "$.document.status")).isEqualTo("READY");
+                    assertThat((String) JsonPath.read(response, "$.document.status"))
+                            .isEqualTo("READY");
                 });
     }
 

@@ -24,7 +24,8 @@ public class LoginService {
 
     public TokenResponse login(LoginRequest request, String deviceName) {
         String email = request.email().trim().toLowerCase();
-        NatsuProperties.RateLimit.Bucket emailBucket = natsuProperties.rateLimit().loginEmail();
+        NatsuProperties.RateLimit.Bucket emailBucket =
+                natsuProperties.rateLimit().loginEmail();
         if (!rateLimiter.tryConsume("login-email", email, emailBucket)) {
             throw new TooManyRequestsException(emailBucket.windowSeconds());
         }
