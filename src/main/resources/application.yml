@@ -140,3 +140,6 @@ natsu:
     # cleanly, never actually resume the parse; this cap just bounds how many times it gets
     # rescanned/re-logged before that terminal state is reached.
     max-attempts: 3
+  # Cached responses for POST endpoints that require Idempotency-Key (documents/sync, etc.).
+  idempotency:
+    key-ttl: 24h

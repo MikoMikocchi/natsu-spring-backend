@@ -30,7 +30,8 @@ public record NatsuProperties(
         OAuth2 oauth2,
         BookImportRecovery bookImportRecovery,
         DictionaryCache dictionaryCache,
-        BookImportExecutor bookImportExecutor) {
+        BookImportExecutor bookImportExecutor,
+        Idempotency idempotency) {
 
     /** Per-entry decompressed cap as a multiple of {@link #maxPackageBytes()}. */
     public static final int ZIP_DECOMPRESSED_RATIO_PER_ENTRY = 2;
@@ -92,4 +93,7 @@ public record NatsuProperties(
      */
     public record BookImportRecovery(
             boolean enabled, int staleAfterMinutes, long checkIntervalMinutes, int maxAttempts) {}
+
+    /** TTL for {@code Idempotency-Key} records on mutating POST endpoints (Stripe-style replay window). */
+    public record Idempotency(Duration keyTtl) {}
 }

@@ -204,16 +204,17 @@ class BookImportIntegrationTest {
 
     private String createSyncedDocument(String token) throws Exception {
         String id = java.util.UUID.randomUUID().toString();
-        mockMvc.perform(post("/v1/documents/sync")
-                .header("Authorization", "Bearer " + token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+        mockMvc.perform(DocumentSyncTestSupport.syncPost(
+                token,
+                DocumentSyncTestSupport.freshIdempotencyKey(),
+                """
                         {"documents":[{
-                          "id":"%s","title":"Locally Imported","source_format":"PLAIN_TEXT","imported_at":1000,
+                          "id":"%s","idempotency_key":"%s","title":"Locally Imported","source_format":"PLAIN_TEXT","imported_at":1000,
                           "char_count":10,"last_read_char_offset":0,"last_read_block_index":0,
                           "last_read_block_char_offset":0,"updated_at_ms":1000,"deleted":false
                         }]}
-                        """.formatted(id)));
+                        """
+                        .formatted(id, DocumentSyncTestSupport.freshIdempotencyKey())));
         return id;
     }
 

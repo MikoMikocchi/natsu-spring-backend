@@ -215,17 +215,22 @@ class FullAppFlowIntegrationTest {
         assertThat(packageEntries.values().stream().anyMatch(content -> content.contains("ate breakfast")))
                 .isTrue();
 
-        mockMvc.perform(post("/v1/documents/sync")
-                        .header("Authorization", "Bearer " + tokens.accessToken())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
+        mockMvc.perform(DocumentSyncTestSupport.syncPost(
+                        tokens.accessToken(),
+                        DocumentSyncTestSupport.freshIdempotencyKey(),
+                        """
                                 {"documents":[{
-                                  "id":"%s","title":"%s","source_format":"PLAIN_TEXT","imported_at":1000,
+                                  "id":"%s","idempotency_key":"%s","title":"%s","source_format":"PLAIN_TEXT","imported_at":1000,
                                   "char_count":500,"last_read_char_offset":42,"last_read_section_id":"section-0",
                                   "last_read_block_index":1,"last_read_block_char_offset":5,
                                   "updated_at_ms":%d,"deleted":false
                                 }]}
-                                """.formatted(documentId, uniqueTitle, documentUpdatedAtMs + 1000)))
+                                """
+                                .formatted(
+                                        documentId,
+                                        DocumentSyncTestSupport.freshIdempotencyKey(),
+                                        uniqueTitle,
+                                        documentUpdatedAtMs + 1000)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.documents[0].last_read_char_offset").value(42));
 

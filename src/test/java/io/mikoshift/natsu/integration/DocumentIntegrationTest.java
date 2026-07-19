@@ -1,5 +1,8 @@
 package io.mikoshift.natsu.integration;
 
+import static io.mikoshift.natsu.integration.DocumentSyncTestSupport.freshIdempotencyKey;
+import static io.mikoshift.natsu.integration.DocumentSyncTestSupport.singleDocumentPayload;
+import static io.mikoshift.natsu.integration.DocumentSyncTestSupport.syncPost;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -42,17 +45,22 @@ class DocumentIntegrationTest {
     }
 
     private String syncDoc(String token, String id, String title, long updatedAtMs, boolean deleted) throws Exception {
-        return mockMvc.perform(post("/v1/documents/sync")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"documents":[{
-                                  "id":"%s","title":"%s","source_format":"EPUB","imported_at":1000,
-                                  "char_count":500,"last_read_char_offset":0,"last_read_section_id":null,
-                                  "last_read_block_index":0,"last_read_block_char_offset":0,
-                                  "updated_at_ms":%d,"deleted":%b
-                                }]}
-                                """.formatted(id, title, updatedAtMs, deleted)))
+        return syncDoc(token, id, title, updatedAtMs, deleted, freshIdempotencyKey(), freshIdempotencyKey());
+    }
+
+    private String syncDoc(
+            String token,
+            String id,
+            String title,
+            long updatedAtMs,
+            boolean deleted,
+            String headerIdempotencyKey,
+            String itemIdempotencyKey)
+            throws Exception {
+        return mockMvc.perform(syncPost(
+                        token,
+                        headerIdempotencyKey,
+                        singleDocumentPayload(id, title, updatedAtMs, deleted, itemIdempotencyKey)))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -88,6 +96,54 @@ class DocumentIntegrationTest {
         mockMvc.perform(get("/v1/documents/" + id).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.document.deleted").value(true));
+    }
+
+    @Test
+    void syncReplaysCachedResponseForDuplicateIdempotencyKey() throws Exception {
+        String token = registerAndGetToken("docs-idempotency@example.com");
+        String id = UUID.randomUUID().toString();
+        String headerKey = freshIdempotencyKey();
+        String itemKey = freshIdempotencyKey();
+        String body = singleDocumentPayload(id, "Idempotent Title", 1500, false, itemKey);
+
+        String first = mockMvc.perform(syncPost(token, headerKey, body))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        assertThat((String) JsonPath.read(first, "$.documents[0].title")).isEqualTo("Idempotent Title");
+
+        String replay = mockMvc.perform(syncPost(token, headerKey, body))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        assertThat(replay).isEqualTo(first);
+
+        mockMvc.perform(get("/v1/documents/" + id).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.document.title").value("Idempotent Title"));
+    }
+
+    @Test
+    void syncRejectsDuplicateIdempotencyKeyWithDifferentBody() throws Exception {
+        String token = registerAndGetToken("docs-idempotency-conflict@example.com");
+        String id = UUID.randomUUID().toString();
+        String headerKey = freshIdempotencyKey();
+        String itemKey = freshIdempotencyKey();
+
+        mockMvc.perform(syncPost(
+                        token,
+                        headerKey,
+                        singleDocumentPayload(id, "Original", 1500, false, itemKey)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(syncPost(
+                        token,
+                        headerKey,
+                        singleDocumentPayload(id, "Changed", 1500, false, itemKey)))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.errors.idempotency_key").exists());
     }
 
     @Test
@@ -159,15 +215,12 @@ class DocumentIntegrationTest {
                 items.append(",");
             }
             items.append("""
-                    {"id":"%s","title":"Doc %d","source_format":"EPUB","imported_at":1000,
+                    {"id":"%s","idempotency_key":"%s","title":"Doc %d","source_format":"EPUB","imported_at":1000,
                      "char_count":1,"last_read_char_offset":0,"last_read_block_index":0,
                      "last_read_block_char_offset":0,"updated_at_ms":1000,"deleted":false}
-                    """.formatted(UUID.randomUUID(), i));
+                    """.formatted(UUID.randomUUID(), freshIdempotencyKey(), i));
         }
-        mockMvc.perform(post("/v1/documents/sync")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"documents\":[" + items + "]}"))
+        mockMvc.perform(syncPost(token, freshIdempotencyKey(), "{\"documents\":[" + items + "]}"))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.errors.documents").exists());
     }

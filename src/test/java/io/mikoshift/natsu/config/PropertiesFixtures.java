@@ -22,6 +22,8 @@ public final class PropertiesFixtures {
             new NatsuProperties.DictionaryCache.CacheSpec(5), new NatsuProperties.DictionaryCache.CacheSpec(30));
     public static final NatsuProperties.BookImportExecutor BOOK_IMPORT_EXECUTOR =
             new NatsuProperties.BookImportExecutor(2, 4, 50);
+    public static final NatsuProperties.Idempotency IDEMPOTENCY =
+            new NatsuProperties.Idempotency(Duration.ofHours(24));
 
     private PropertiesFixtures() {}
 
@@ -44,6 +46,7 @@ public final class PropertiesFixtures {
                 OAUTH2,
                 BOOK_IMPORT_RECOVERY,
                 DICTIONARY_CACHE,
-                BOOK_IMPORT_EXECUTOR);
+                BOOK_IMPORT_EXECUTOR,
+                IDEMPOTENCY);
     }
 }

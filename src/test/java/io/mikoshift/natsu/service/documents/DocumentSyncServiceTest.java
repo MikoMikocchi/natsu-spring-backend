@@ -45,11 +45,27 @@ class DocumentSyncServiceTest {
         user.setId(1L);
     }
 
+    private static DocumentSyncItemRequest item(
+            UUID id, String title, long updatedAtMs, boolean deleted, int charCount, int lastReadOffset) {
+        return new DocumentSyncItemRequest(
+                id,
+                "item-" + id,
+                title,
+                SourceFormat.EPUB,
+                1000L,
+                charCount,
+                lastReadOffset,
+                "sec-1",
+                0,
+                10,
+                updatedAtMs,
+                deleted);
+    }
+
     @Test
     void createsANewDocumentWhenNoneExistsYetForThisUser() {
         UUID id = UUID.randomUUID();
-        DocumentSyncItemRequest item = new DocumentSyncItemRequest(
-                id, "My Book", SourceFormat.EPUB, 1000L, 500, 10, "sec-1", 0, 10, 5000L, false);
+        DocumentSyncItemRequest item = item(id, "My Book", 5000L, false, 500, 10);
         when(documentRepository.findByIdAndUser(id, user)).thenReturn(Optional.empty());
         when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -77,8 +93,7 @@ class DocumentSyncServiceTest {
         stored.setUpdatedAtMs(9000L);
         when(documentRepository.findByIdAndUser(id, user)).thenReturn(Optional.of(stored));
 
-        DocumentSyncItemRequest staleItem = new DocumentSyncItemRequest(
-                id, "Stale Title", SourceFormat.EPUB, 1000L, 500, 10, "sec-1", 0, 10, 8000L, false);
+        DocumentSyncItemRequest staleItem = item(id, "Stale Title", 8000L, false, 500, 10);
 
         List<Document> result = syncService.sync(user, new DocumentSyncRequest(List.of(staleItem)));
 
@@ -98,8 +113,7 @@ class DocumentSyncServiceTest {
         when(documentRepository.findByIdAndUser(id, user)).thenReturn(Optional.of(stored));
         when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        DocumentSyncItemRequest newerItem = new DocumentSyncItemRequest(
-                id, "New Title", SourceFormat.EPUB, 2000L, 800, 20, "sec-2", 1, 5, 2000L, false);
+        DocumentSyncItemRequest newerItem = item(id, "New Title", 2000L, false, 800, 20);
 
         List<Document> result = syncService.sync(user, new DocumentSyncRequest(List.of(newerItem)));
 
@@ -122,8 +136,7 @@ class DocumentSyncServiceTest {
         when(documentRepository.findByIdAndUser(id, user)).thenReturn(Optional.of(stored));
         when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        DocumentSyncItemRequest sameTimestampItem = new DocumentSyncItemRequest(
-                id, "Same Clock", SourceFormat.EPUB, 1000L, 100, 0, null, 0, 0, 5000L, false);
+        DocumentSyncItemRequest sameTimestampItem = item(id, "Same Clock", 5000L, false, 100, 0);
 
         syncService.sync(user, new DocumentSyncRequest(List.of(sameTimestampItem)));
 
@@ -140,8 +153,7 @@ class DocumentSyncServiceTest {
         when(documentRepository.findByIdAndUser(id, user)).thenReturn(Optional.of(stored));
         when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        DocumentSyncItemRequest deleteItem =
-                new DocumentSyncItemRequest(id, "Doomed", SourceFormat.EPUB, 1000L, 100, 0, null, 0, 0, 2000L, true);
+        DocumentSyncItemRequest deleteItem = item(id, "Doomed", 2000L, true, 100, 0);
 
         syncService.sync(user, new DocumentSyncRequest(List.of(deleteItem)));
 
@@ -154,8 +166,7 @@ class DocumentSyncServiceTest {
         when(documentRepository.findByIdAndUser(id, user)).thenReturn(Optional.empty());
         when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        DocumentSyncItemRequest itemWithNullTitle =
-                new DocumentSyncItemRequest(id, null, SourceFormat.EPUB, 1000L, 100, 0, null, 0, 0, 2000L, false);
+        DocumentSyncItemRequest itemWithNullTitle = item(id, null, 2000L, false, 100, 0);
 
         List<Document> result = syncService.sync(user, new DocumentSyncRequest(List.of(itemWithNullTitle)));
 
@@ -174,10 +185,21 @@ class DocumentSyncServiceTest {
         when(documentRepository.findByIdAndUser(newId, user)).thenReturn(Optional.empty());
         when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        DocumentSyncItemRequest staleItem = new DocumentSyncItemRequest(
-                staleId, "Stale", SourceFormat.EPUB, 1000L, 100, 0, null, 0, 0, 500L, false);
-        DocumentSyncItemRequest freshItem = new DocumentSyncItemRequest(
-                newId, "Fresh", SourceFormat.MARKDOWN, 1000L, 100, 0, null, 0, 0, 500L, false);
+        DocumentSyncItemRequest staleItem = item(staleId, "Stale", 500L, false, 100, 0);
+        DocumentSyncItemRequest freshItem =
+                new DocumentSyncItemRequest(
+                        newId,
+                        "item-" + newId,
+                        "Fresh",
+                        SourceFormat.MARKDOWN,
+                        1000L,
+                        100,
+                        0,
+                        null,
+                        0,
+                        0,
+                        500L,
+                        false);
 
         List<Document> result = syncService.sync(user, new DocumentSyncRequest(List.of(staleItem, freshItem)));
 

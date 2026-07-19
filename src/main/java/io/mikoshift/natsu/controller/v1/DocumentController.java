@@ -13,8 +13,10 @@ import io.mikoshift.natsu.service.documents.DocumentQueryService;
 import io.mikoshift.natsu.service.documents.DocumentSyncService;
 import io.mikoshift.natsu.service.documents.PackageUploadService;
 import io.mikoshift.natsu.service.storage.PackageStorageService;
+import io.mikoshift.natsu.service.sync.IdempotencyService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -44,6 +47,7 @@ public class DocumentController {
 
     private final DocumentQueryService documentQueryService;
     private final DocumentSyncService documentSyncService;
+    private final IdempotencyService idempotencyService;
     private final DocumentImportService documentImportService;
     private final PackageUploadService packageUploadService;
     private final PackageStorageService packageStorageService;
@@ -68,8 +72,12 @@ public class DocumentController {
     }
 
     @PostMapping("/sync")
-    DocumentIndexResponse sync(@AuthenticationPrincipal User user, @Valid @RequestBody DocumentSyncRequest request) {
-        return toIndexResponse(documentSyncService.sync(user, request));
+    DocumentIndexResponse sync(
+            @AuthenticationPrincipal User user,
+            @RequestHeader("Idempotency-Key") @NotBlank @Size(max = 255) String idempotencyKey,
+            @Valid @RequestBody DocumentSyncRequest request) {
+        return idempotencyService.executeDocumentSync(
+                user, idempotencyKey, request, () -> toIndexResponse(documentSyncService.sync(user, request)));
     }
 
     @PostMapping("/import")
