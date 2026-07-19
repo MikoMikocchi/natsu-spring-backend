@@ -19,6 +19,11 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
   # The Spring Boot app itself, built from the multi-stage Dockerfile in this directory.
   # Not meant to replace `./mvnw spring-boot:run` for day-to-day dev (no hot reload, and every
   # source change means a rebuild) -- this is mainly for exercising the production container
@@ -27,6 +32,7 @@ services:
     build: .
     depends_on:
       - postgres
+      - redis
       # Not strictly required for startup (mail sending is best-effort), but the app does try to
       # talk to an SMTP host, so bring it up alongside postgres for a working local stack.
       - mailpit
@@ -40,6 +46,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: natsu
       SPRING_MAIL_HOST: mailpit
       SPRING_MAIL_PORT: 1025
+      SPRING_DATA_REDIS_HOST: redis
     # Dev-only stack -- if the app crashes, that's a signal to look at logs, not something we want
     # silently restarted in a loop. "no" (the Compose default) is fine here; leaving it explicit
     # documents that this was a deliberate choice, not an oversight.

@@ -35,6 +35,12 @@ spring:
           auth: ${SPRING_MAIL_SMTP_AUTH:false}
           starttls:
             enable: ${SPRING_MAIL_SMTP_STARTTLS:false}
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+  cache:
+    type: redis
 
 server:
   port: 3000
@@ -103,18 +109,15 @@ natsu:
     refresh-token:
       capacity: 5
       window-seconds: 60
-    # Caffeine cache backing per-(category,key) Bucket4j instances in RateLimiter.
+    # Idle TTL for rate-limit bucket keys in Redis (Bucket4j expiration strategy).
     bucket-cache:
       expire-after-access-minutes: 10
-      maximum-size: 10000
-  # In-process dictionary caches (invalidated via User.dictCacheVersion in cache keys).
+  # Redis-backed dictionary caches (invalidated via User.dictCacheVersion in cache keys).
   dictionary-cache:
     lookup:
       expire-after-write-minutes: 5
-      maximum-size: 10000
     enabled-ids:
       expire-after-write-minutes: 30
-      maximum-size: 10000
   # Thread pool for @Async book imports (bookImportExecutor bean).
   book-import-executor:
     core-pool-size: 2

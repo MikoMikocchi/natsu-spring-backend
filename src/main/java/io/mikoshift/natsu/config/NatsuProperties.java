@@ -60,18 +60,18 @@ public record NatsuProperties(
             Bucket passwordReset,
             Bucket refresh,
             Bucket refreshToken,
-            /** In-process cache of Bucket4j instances keyed by (category, client); bounds memory. */
+            /** TTL for idle rate-limit bucket keys in Redis (Bucket4j expiration strategy). */
             BucketCache bucketCache) {
 
         public record Bucket(int capacity, int windowSeconds) {}
 
-        public record BucketCache(int expireAfterAccessMinutes, int maximumSize) {}
+        public record BucketCache(int expireAfterAccessMinutes) {}
     }
 
-    /** In-process Caffeine caches for dictionary lookup (no Redis in single-instance deployments). */
+    /** Redis-backed dictionary caches (invalidated via {@code User.dictCacheVersion} in cache keys). */
     public record DictionaryCache(CacheSpec lookup, CacheSpec enabledIds) {
 
-        public record CacheSpec(int expireAfterWriteMinutes, int maximumSize) {}
+        public record CacheSpec(int expireAfterWriteMinutes) {}
     }
 
     /** Thread pool for {@code @Async} book import tasks ({@code bookImportExecutor}). */

@@ -9,7 +9,7 @@ public final class PropertiesFixtures {
 
     private static final NatsuProperties.RateLimit.Bucket BUCKET = new NatsuProperties.RateLimit.Bucket(5, 60);
     private static final NatsuProperties.RateLimit.BucketCache BUCKET_CACHE =
-            new NatsuProperties.RateLimit.BucketCache(10, 10_000);
+            new NatsuProperties.RateLimit.BucketCache(10);
     public static final NatsuProperties.RateLimit RATE_LIMIT =
             new NatsuProperties.RateLimit(BUCKET, BUCKET, BUCKET, BUCKET, BUCKET, BUCKET, BUCKET_CACHE);
     public static final NatsuProperties.Auth AUTH =
@@ -19,8 +19,7 @@ public final class PropertiesFixtures {
     public static final NatsuProperties.BookImportRecovery BOOK_IMPORT_RECOVERY =
             new NatsuProperties.BookImportRecovery(true, 15, 5, 3);
     public static final NatsuProperties.DictionaryCache DICTIONARY_CACHE = new NatsuProperties.DictionaryCache(
-            new NatsuProperties.DictionaryCache.CacheSpec(5, 10_000),
-            new NatsuProperties.DictionaryCache.CacheSpec(30, 10_000));
+            new NatsuProperties.DictionaryCache.CacheSpec(5), new NatsuProperties.DictionaryCache.CacheSpec(30));
     public static final NatsuProperties.BookImportExecutor BOOK_IMPORT_EXECUTOR =
             new NatsuProperties.BookImportExecutor(2, 4, 50);
 
