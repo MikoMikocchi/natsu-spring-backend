@@ -3,7 +3,6 @@ package io.mikoshift.natsu.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.mikoshift.natsu.TestcontainersConfiguration;
@@ -29,7 +28,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -118,16 +116,14 @@ class StorageQuotaIntegrationTest {
     private String createSyncedDocument(String token) throws Exception {
         String id = UUID.randomUUID().toString();
         mockMvc.perform(DocumentSyncTestSupport.syncPost(
-                        token,
-                        DocumentSyncTestSupport.freshIdempotencyKey(),
-                        """
+                        token, DocumentSyncTestSupport.freshIdempotencyKey(), """
                                 {"documents":[{
                                   "id":"%s","idempotency_key":"%s","title":"Doc","source_format":"PLAIN_TEXT","imported_at":1000,
                                   "char_count":10,"last_read_char_offset":0,"last_read_block_index":0,
                                   "last_read_block_char_offset":0,"updated_at_ms":1000,"deleted":false
                                 }]}
-                                """
-                                .formatted(id, DocumentSyncTestSupport.freshIdempotencyKey())))
+                                """.formatted(
+                                        id, DocumentSyncTestSupport.freshIdempotencyKey())))
                 .andExpect(status().isOk());
         return id;
     }

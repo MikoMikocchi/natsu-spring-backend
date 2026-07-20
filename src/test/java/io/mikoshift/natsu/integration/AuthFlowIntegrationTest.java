@@ -212,16 +212,14 @@ class AuthFlowIntegrationTest {
 
         String documentId = UUID.randomUUID().toString();
         mockMvc.perform(DocumentSyncTestSupport.syncPost(
-                        token,
-                        DocumentSyncTestSupport.freshIdempotencyKey(),
-                        """
+                        token, DocumentSyncTestSupport.freshIdempotencyKey(), """
                                 {"documents":[{
                                   "id":"%s","idempotency_key":"%s","title":"Locally Imported","source_format":"PLAIN_TEXT","imported_at":1000,
                                   "char_count":10,"last_read_char_offset":0,"last_read_block_index":0,
                                   "last_read_block_char_offset":0,"updated_at_ms":1000,"deleted":false
                                 }]}
-                                """
-                                .formatted(documentId, DocumentSyncTestSupport.freshIdempotencyKey())))
+                                """.formatted(
+                                        documentId, DocumentSyncTestSupport.freshIdempotencyKey())))
                 .andExpect(status().isOk());
 
         byte[] zip = buildZip("manifest.json");

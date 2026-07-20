@@ -27,8 +27,7 @@ public final class DocumentSyncTestSupport {
                   "last_read_block_index":0,"last_read_block_char_offset":0,
                   "updated_at_ms":%d,"deleted":%b,"idempotency_key":"%s"
                 }]}
-                """
-                .formatted(id, title, updatedAtMs, deleted, itemIdempotencyKey);
+                """.formatted(id, title, updatedAtMs, deleted, itemIdempotencyKey);
     }
 
     public static String freshIdempotencyKey() {

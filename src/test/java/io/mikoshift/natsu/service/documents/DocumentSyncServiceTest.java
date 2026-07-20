@@ -186,20 +186,8 @@ class DocumentSyncServiceTest {
         when(documentRepository.save(any(Document.class))).thenAnswer(inv -> inv.getArgument(0));
 
         DocumentSyncItemRequest staleItem = item(staleId, "Stale", 500L, false, 100, 0);
-        DocumentSyncItemRequest freshItem =
-                new DocumentSyncItemRequest(
-                        newId,
-                        "item-" + newId,
-                        "Fresh",
-                        SourceFormat.MARKDOWN,
-                        1000L,
-                        100,
-                        0,
-                        null,
-                        0,
-                        0,
-                        500L,
-                        false);
+        DocumentSyncItemRequest freshItem = new DocumentSyncItemRequest(
+                newId, "item-" + newId, "Fresh", SourceFormat.MARKDOWN, 1000L, 100, 0, null, 0, 0, 500L, false);
 
         List<Document> result = syncService.sync(user, new DocumentSyncRequest(List.of(staleItem, freshItem)));
 

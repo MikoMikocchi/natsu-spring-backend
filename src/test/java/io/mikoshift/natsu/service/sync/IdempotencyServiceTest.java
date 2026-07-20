@@ -21,7 +21,6 @@ import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.ValidationException;
 import io.mikoshift.natsu.repository.IdempotencyRecordRepository;
 import io.mikoshift.natsu.service.documents.DocumentSyncService;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Instant;
@@ -58,8 +57,8 @@ class IdempotencyServiceTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         NatsuProperties properties = PropertiesFixtures.minimal("./storage", 1024, 1024);
-        idempotencyService = new IdempotencyService(
-                repository, objectMapper, Clock.fixed(FIXED_NOW, ZoneOffset.UTC), properties);
+        idempotencyService =
+                new IdempotencyService(repository, objectMapper, Clock.fixed(FIXED_NOW, ZoneOffset.UTC), properties);
         user = new User();
         user.setId(1L);
     }
@@ -116,10 +115,7 @@ class IdempotencyServiceTest {
         when(repository.findByUserIdAndIdempotencyKeyForUpdate(1L, "key-1")).thenReturn(Optional.of(record));
 
         assertThatThrownBy(() -> idempotencyService.executeDocumentSync(
-                        user,
-                        "key-1",
-                        changed,
-                        () -> toIndexResponse(documentSyncService.sync(user, changed))))
+                        user, "key-1", changed, () -> toIndexResponse(documentSyncService.sync(user, changed))))
                 .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("idempotency_key");
         verify(documentSyncService, never()).sync(any(), any());
@@ -135,7 +131,8 @@ class IdempotencyServiceTest {
                 hashRequest(request),
                 "{}",
                 FIXED_NOW.minus(PropertiesFixtures.IDEMPOTENCY.keyTtl()).minusSeconds(1));
-        when(repository.findByUserIdAndIdempotencyKeyForUpdate(1L, "key-expired")).thenReturn(Optional.of(expired));
+        when(repository.findByUserIdAndIdempotencyKeyForUpdate(1L, "key-expired"))
+                .thenReturn(Optional.of(expired));
         when(documentSyncService.sync(user, request)).thenReturn(List.of(new Document()));
 
         idempotencyService.executeDocumentSync(
@@ -148,18 +145,7 @@ class IdempotencyServiceTest {
 
     private DocumentSyncRequest sampleRequest(UUID id, String title, long updatedAtMs) {
         return new DocumentSyncRequest(List.of(new DocumentSyncItemRequest(
-                id,
-                "item-key",
-                title,
-                SourceFormat.EPUB,
-                1000L,
-                500,
-                0,
-                null,
-                0,
-                0,
-                updatedAtMs,
-                false)));
+                id, "item-key", title, SourceFormat.EPUB, 1000L, 500, 0, null, 0, 0, updatedAtMs, false)));
     }
 
     private DocumentIndexResponse sampleResponse(UUID id, String title, long updatedAtMs) {

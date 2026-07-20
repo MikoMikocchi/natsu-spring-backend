@@ -7,7 +7,6 @@ import io.mikoshift.natsu.entity.IdempotencyRecord;
 import io.mikoshift.natsu.entity.User;
 import io.mikoshift.natsu.exception.ValidationException;
 import io.mikoshift.natsu.repository.IdempotencyRecordRepository;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
@@ -35,24 +34,23 @@ public class IdempotencyService {
         String requestHash = hashRequest(request);
         Instant now = clock.instant();
 
-        IdempotencyRecord existing =
-                repository.findByUserIdAndIdempotencyKeyForUpdate(user.getId(), idempotencyKey).orElse(null);
+        IdempotencyRecord existing = repository
+                .findByUserIdAndIdempotencyKeyForUpdate(user.getId(), idempotencyKey)
+                .orElse(null);
         if (existing != null) {
             if (isExpired(existing.getCreatedAt(), now)) {
                 repository.delete(existing);
             } else {
                 if (!existing.getRequestHash().equals(requestHash)) {
                     throw ValidationException.of(
-                            "idempotency_key",
-                            "Idempotency key was already used with a different request body");
+                            "idempotency_key", "Idempotency key was already used with a different request body");
                 }
                 return deserialize(existing.getResponseBody());
             }
         }
 
         DocumentIndexResponse response = action.get();
-        repository.save(new IdempotencyRecord(
-                user.getId(), idempotencyKey, requestHash, serialize(response), now));
+        repository.save(new IdempotencyRecord(user.getId(), idempotencyKey, requestHash, serialize(response), now));
         return response;
     }
 

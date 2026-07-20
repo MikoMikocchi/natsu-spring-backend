@@ -5,7 +5,6 @@ import static io.mikoshift.natsu.integration.DocumentSyncTestSupport.singleDocum
 import static io.mikoshift.natsu.integration.DocumentSyncTestSupport.syncPost;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -132,16 +130,10 @@ class DocumentIntegrationTest {
         String headerKey = freshIdempotencyKey();
         String itemKey = freshIdempotencyKey();
 
-        mockMvc.perform(syncPost(
-                        token,
-                        headerKey,
-                        singleDocumentPayload(id, "Original", 1500, false, itemKey)))
+        mockMvc.perform(syncPost(token, headerKey, singleDocumentPayload(id, "Original", 1500, false, itemKey)))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(syncPost(
-                        token,
-                        headerKey,
-                        singleDocumentPayload(id, "Changed", 1500, false, itemKey)))
+        mockMvc.perform(syncPost(token, headerKey, singleDocumentPayload(id, "Changed", 1500, false, itemKey)))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.errors.idempotency_key").exists());
     }

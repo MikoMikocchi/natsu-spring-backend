@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -29,7 +28,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -204,17 +202,15 @@ class BookImportIntegrationTest {
 
     private String createSyncedDocument(String token) throws Exception {
         String id = java.util.UUID.randomUUID().toString();
-        mockMvc.perform(DocumentSyncTestSupport.syncPost(
-                token,
-                DocumentSyncTestSupport.freshIdempotencyKey(),
-                """
+        mockMvc.perform(
+                DocumentSyncTestSupport.syncPost(token, DocumentSyncTestSupport.freshIdempotencyKey(), """
                         {"documents":[{
                           "id":"%s","idempotency_key":"%s","title":"Locally Imported","source_format":"PLAIN_TEXT","imported_at":1000,
                           "char_count":10,"last_read_char_offset":0,"last_read_block_index":0,
                           "last_read_block_char_offset":0,"updated_at_ms":1000,"deleted":false
                         }]}
-                        """
-                        .formatted(id, DocumentSyncTestSupport.freshIdempotencyKey())));
+                        """.formatted(
+                                id, DocumentSyncTestSupport.freshIdempotencyKey())));
         return id;
     }
 
