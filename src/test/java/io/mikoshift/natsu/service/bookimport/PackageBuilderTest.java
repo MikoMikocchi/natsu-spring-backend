@@ -39,7 +39,26 @@ class PackageBuilderTest {
         // "Hello world." (2) + the image block's alt text "a picture" (2) = 4.
         assertThat(manifest.sections().get(0).wordCount()).isEqualTo(4);
         assertThat(manifest.toc()).hasSize(1);
-        assertThat(manifest.toc().get(0).sectionId()).isEqualTo("section-0");
+        String sectionJson = new String(entries.get("sections/section-0.json"));
+        assertThat(sectionJson).contains("\"type\":\"paragraph\"");
+        assertThat(sectionJson).contains("\"type\":\"image\"");
+    }
+
+    @Test
+    void writesBlockTypeDiscriminatorsIntoSectionJson() {
+        ImportedSection section = new ImportedSection(
+                "section-0",
+                "Chapter One",
+                List.of(
+                        new HeadingBlock("section-0-b0", 1, "Оглавление", List.of()),
+                        new ParagraphBlock("section-0-b1", "Body text.", List.of(), List.of())));
+        ImportedBook book = new ImportedBook("My Book", List.of(), "en", null, List.of(), List.of(section), List.of());
+
+        byte[] zip = builder.buildZip("My Book", SourceFormat.EPUB, book);
+        String sectionJson = new String(ZipUtils.readEntries(zip).get("sections/section-0.json"));
+
+        assertThat(sectionJson).contains("\"type\":\"heading\"");
+        assertThat(sectionJson).contains("\"type\":\"paragraph\"");
     }
 
     @Test
@@ -68,5 +87,21 @@ class PackageBuilderTest {
                 .readValue(ZipUtils.readEntries(zip).get("manifest.json"), PackageManifest.class);
 
         assertThat(manifest.sections().get(0).wordCount()).isEqualTo(6);
+    }
+
+    @Test
+    void skipsDuplicateAssetsWithSameSha256() {
+        ParagraphBlock paragraph = new ParagraphBlock("section-0-b0", "Hello world.", List.of(), List.of());
+        ImportedAsset asset1 = new ImportedAsset("abc123", "image/png", new byte[] {1, 2, 3});
+        ImportedAsset asset2 = new ImportedAsset("abc123", "image/png", new byte[] {1, 2, 3});
+        ImportedSection section = new ImportedSection("section-0", "Chapter One", List.of(paragraph));
+        ImportedBook book = new ImportedBook(
+                "My Book", List.of(), "en", "abc123", List.of(), List.of(section), List.of(asset1, asset2));
+
+        byte[] zip = builder.buildZip("My Book", SourceFormat.EPUB, book);
+        Map<String, byte[]> entries = ZipUtils.readEntries(zip);
+
+        assertThat(entries).containsKey("assets/abc123.png");
+        assertThat(entries.keySet().stream().filter(key -> key.startsWith("assets/"))).hasSize(1);
     }
 }

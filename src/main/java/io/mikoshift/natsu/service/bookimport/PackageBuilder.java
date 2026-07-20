@@ -9,13 +9,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Builds the on-disk package format (schema version 2): a zip of manifest.json, one JSON block
@@ -34,13 +38,17 @@ public class PackageBuilder {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(buffer, StandardCharsets.UTF_8)) {
             for (ImportedSection section : book.sections()) {
-                byte[] json = objectMapper.writeValueAsBytes(section.blocks());
+                byte[] json = writeSectionBlocks(section.blocks());
                 String path = "sections/" + section.id() + ".json";
                 writeEntry(zip, path, json);
                 manifestSections.add(new ManifestSection(
                         section.id(), section.title(), path, wordCount(section.blocks()), HashUtils.sha256Hex(json)));
             }
+            Set<String> writtenAssetIds = new HashSet<>();
             for (ImportedAsset asset : book.assets()) {
+                if (!writtenAssetIds.add(asset.sha256())) {
+                    continue;
+                }
                 writeEntry(zip, assetPath(asset), asset.content());
             }
 
@@ -71,6 +79,27 @@ public class PackageBuilder {
             }
         }
         return text.toString().strip();
+    }
+
+    private byte[] writeSectionBlocks(List<Block> blocks) throws IOException {
+        ArrayNode array = objectMapper.createArrayNode();
+        for (Block block : blocks) {
+            ObjectNode node = (ObjectNode) objectMapper.valueToTree(block);
+            node.put("type", blockType(block));
+            array.add(node);
+        }
+        return objectMapper.writeValueAsBytes(array);
+    }
+
+    private static String blockType(Block block) {
+        return switch (block) {
+            case ParagraphBlock b -> "paragraph";
+            case HeadingBlock b -> "heading";
+            case ImageBlock b -> "image";
+            case BlockquoteBlock b -> "blockquote";
+            case ListItemBlock b -> "list_item";
+            case DividerBlock b -> "divider";
+        };
     }
 
     private static List<ManifestTocNode> toManifestToc(List<TocNode> toc) {

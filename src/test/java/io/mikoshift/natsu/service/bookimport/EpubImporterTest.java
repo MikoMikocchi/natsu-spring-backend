@@ -63,6 +63,25 @@ class EpubImporterTest {
     }
 
     @Test
+    void deduplicatesIdenticalImagesReferencedFromDifferentPaths() {
+        byte[] epub = buildEpub(Map.of(
+                "META-INF/container.xml", containerXml("OEBPS/content.opf"),
+                "OEBPS/content.opf", opfWithTwoImagePaths(),
+                "OEBPS/chapter1.xhtml",
+                        chapterXhtmlRaw(
+                                "Chapter One",
+                                """
+                                <p><img src="images/a.png" alt="first"/><img src="images/b.png" alt="second"/></p>
+                                """),
+                "OEBPS/images/a.png", "same-image-bytes",
+                "OEBPS/images/b.png", "same-image-bytes"));
+
+        ImportedBook book = importer.importFrom(epub);
+
+        assertThat(book.assets()).hasSize(1);
+    }
+
+    @Test
     void rejectsArchiveWithoutContainerXml() {
         byte[] epub = buildEpub(Map.of("OEBPS/content.opf", opfXml()));
 
@@ -109,6 +128,25 @@ class EpubImporterTest {
                   <spine>
                     <itemref idref="ch1"/>
                     <itemref idref="ch2"/>
+                  </spine>
+                </package>
+                """;
+    }
+
+    private static String opfWithTwoImagePaths() {
+        return """
+                <?xml version="1.0"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>My Test Book</dc:title>
+                  </metadata>
+                  <manifest>
+                    <item id="ch1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+                    <item id="img-a" href="images/a.png" media-type="image/png"/>
+                    <item id="img-b" href="images/b.png" media-type="image/png"/>
+                  </manifest>
+                  <spine>
+                    <itemref idref="ch1"/>
                   </spine>
                 </package>
                 """;

@@ -14,10 +14,12 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -76,8 +78,10 @@ public class EpubImporter implements BookImporter {
         String opfDir = opfPath.contains("/") ? opfPath.substring(0, opfPath.lastIndexOf('/')) : "";
         List<ImportedAsset> assets = new ArrayList<>();
         Map<String, String> assetIdByPath = new HashMap<>();
+        Set<String> knownAssetSha256 = new HashSet<>();
 
-        String coverAssetId = extractCoverAssetId(opf, opfDir, entries, assetIdByPath, assets);
+        String coverAssetId =
+                extractCoverAssetId(opf, opfDir, entries, assetIdByPath, knownAssetSha256, assets);
 
         List<ImportedSection> sections = new ArrayList<>();
         Map<String, String> pathToSectionId = new LinkedHashMap<>();
@@ -96,7 +100,7 @@ public class EpubImporter implements BookImporter {
             String sectionId = "section-" + index;
             String sectionTitle = firstHeadingText(xhtml);
             List<Block> blocks = xhtml.body() != null
-                    ? toBlocks(xhtml.body(), sectionId, path, entries, assetIdByPath, assets)
+                    ? toBlocks(xhtml.body(), sectionId, path, entries, assetIdByPath, knownAssetSha256, assets)
                     : List.of();
             sections.add(new ImportedSection(sectionId, sectionTitle, blocks));
             pathToSectionId.put(path, sectionId);
@@ -218,11 +222,13 @@ public class EpubImporter implements BookImporter {
             String opfDir,
             Map<String, byte[]> entries,
             Map<String, String> assetIdByPath,
+            Set<String> knownAssetSha256,
             List<ImportedAsset> assets) {
         for (Element item : opf.select("manifest > item[href]")) {
             String properties = item.attr("properties").toLowerCase(Locale.ROOT);
             if (properties.contains("cover-image")) {
-                return resolveAsset(item.attr("href"), opfDir, entries, assetIdByPath, assets);
+                return resolveAsset(
+                        item.attr("href"), opfDir, entries, assetIdByPath, knownAssetSha256, assets);
             }
         }
         Element meta = opf.selectFirst("metadata > meta[name=cover]");
@@ -230,7 +236,8 @@ public class EpubImporter implements BookImporter {
             String itemId = meta.attr("content");
             for (Element item : opf.select("manifest > item[href]")) {
                 if (item.attr("id").equals(itemId)) {
-                    return resolveAsset(item.attr("href"), opfDir, entries, assetIdByPath, assets);
+                    return resolveAsset(
+                            item.attr("href"), opfDir, entries, assetIdByPath, knownAssetSha256, assets);
                 }
             }
         }
@@ -242,6 +249,7 @@ public class EpubImporter implements BookImporter {
             String baseDir,
             Map<String, byte[]> entries,
             Map<String, String> assetIdByPath,
+            Set<String> knownAssetSha256,
             List<ImportedAsset> assets) {
         if (src == null || src.isBlank()) {
             return null;
@@ -257,7 +265,9 @@ public class EpubImporter implements BookImporter {
         }
         String sha256 = HashUtils.sha256Hex(content);
         assetIdByPath.put(path, sha256);
-        assets.add(new ImportedAsset(sha256, contentTypeFor(path), content));
+        if (knownAssetSha256.add(sha256)) {
+            assets.add(new ImportedAsset(sha256, contentTypeFor(path), content));
+        }
         return sha256;
     }
 
@@ -289,11 +299,12 @@ public class EpubImporter implements BookImporter {
             String basePath,
             Map<String, byte[]> entries,
             Map<String, String> assetIdByPath,
+            Set<String> knownAssetSha256,
             List<ImportedAsset> assets) {
         List<Block> blocks = new ArrayList<>();
         int[] counter = {0};
         for (Element child : body.children()) {
-            walk(child, sectionId, basePath, entries, assetIdByPath, assets, counter, blocks);
+            walk(child, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter, blocks);
         }
         return blocks;
     }
@@ -304,22 +315,23 @@ public class EpubImporter implements BookImporter {
             String basePath,
             Map<String, byte[]> entries,
             Map<String, String> assetIdByPath,
+            Set<String> knownAssetSha256,
             List<ImportedAsset> assets,
             int[] counter,
             List<Block> blocks) {
         String tag = el.tagName().toLowerCase(Locale.ROOT);
         switch (tag) {
             case "h1", "h2", "h3", "h4", "h5", "h6" -> {
-                TextWithMarks t = extractText(el, basePath, entries, assetIdByPath, assets);
+                TextWithMarks t = extractText(el, basePath, entries, assetIdByPath, knownAssetSha256, assets);
                 int level = Integer.parseInt(tag.substring(1));
                 blocks.add(new HeadingBlock(nextId(sectionId, counter), level, t.text(), t.marks()));
             }
             case "p" -> {
                 Element soleImage = soleImage(el);
                 if (soleImage != null) {
-                    blocks.add(imageBlock(soleImage, sectionId, basePath, entries, assetIdByPath, assets, counter));
+                    blocks.add(imageBlock(soleImage, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter));
                 } else {
-                    TextWithMarks t = extractText(el, basePath, entries, assetIdByPath, assets);
+                    TextWithMarks t = extractText(el, basePath, entries, assetIdByPath, knownAssetSha256, assets);
                     if (!t.text().isBlank() || !t.inlineObjects().isEmpty()) {
                         blocks.add(
                                 new ParagraphBlock(nextId(sectionId, counter), t.text(), t.marks(), t.inlineObjects()));
@@ -327,14 +339,14 @@ public class EpubImporter implements BookImporter {
                 }
             }
             case "blockquote" -> {
-                TextWithMarks t = extractText(el, basePath, entries, assetIdByPath, assets);
+                TextWithMarks t = extractText(el, basePath, entries, assetIdByPath, knownAssetSha256, assets);
                 blocks.add(new BlockquoteBlock(nextId(sectionId, counter), t.text(), t.marks()));
             }
             case "ul", "ol" -> {
                 boolean ordered = tag.equals("ol");
                 for (Element li : el.children()) {
                     if (li.tagName().equalsIgnoreCase("li")) {
-                        TextWithMarks t = extractText(li, basePath, entries, assetIdByPath, assets);
+                        TextWithMarks t = extractText(li, basePath, entries, assetIdByPath, knownAssetSha256, assets);
                         blocks.add(new ListItemBlock(nextId(sectionId, counter), 0, ordered, t.text(), t.marks()));
                     }
                 }
@@ -343,17 +355,17 @@ public class EpubImporter implements BookImporter {
             case "figure" -> {
                 Element img = el.selectFirst("img");
                 if (img != null) {
-                    blocks.add(imageBlock(img, sectionId, basePath, entries, assetIdByPath, assets, counter));
+                    blocks.add(imageBlock(img, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter));
                 }
             }
-            case "img" -> blocks.add(imageBlock(el, sectionId, basePath, entries, assetIdByPath, assets, counter));
+            case "img" -> blocks.add(imageBlock(el, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter));
             default -> {
                 if (!el.children().isEmpty()) {
                     for (Element child : el.children()) {
-                        walk(child, sectionId, basePath, entries, assetIdByPath, assets, counter, blocks);
+                        walk(child, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter, blocks);
                     }
                 } else if (!el.text().isBlank()) {
-                    TextWithMarks t = extractText(el, basePath, entries, assetIdByPath, assets);
+                    TextWithMarks t = extractText(el, basePath, entries, assetIdByPath, knownAssetSha256, assets);
                     blocks.add(new ParagraphBlock(nextId(sectionId, counter), t.text(), t.marks(), t.inlineObjects()));
                 }
             }
@@ -374,9 +386,11 @@ public class EpubImporter implements BookImporter {
             String basePath,
             Map<String, byte[]> entries,
             Map<String, String> assetIdByPath,
+            Set<String> knownAssetSha256,
             List<ImportedAsset> assets,
             int[] counter) {
-        String assetId = resolveAsset(img.attr("src"), baseDirOf(basePath), entries, assetIdByPath, assets);
+        String assetId =
+                resolveAsset(img.attr("src"), baseDirOf(basePath), entries, assetIdByPath, knownAssetSha256, assets);
         String alt = img.attr("alt");
         return new ImageBlock(nextId(sectionId, counter), assetId, alt.isBlank() ? null : alt);
     }
@@ -396,12 +410,13 @@ public class EpubImporter implements BookImporter {
             String basePath,
             Map<String, byte[]> entries,
             Map<String, String> assetIdByPath,
+            Set<String> knownAssetSha256,
             List<ImportedAsset> assets) {
         StringBuilder text = new StringBuilder();
         List<Mark> marks = new ArrayList<>();
         List<InlineObject> inline = new ArrayList<>();
         for (Node child : el.childNodes()) {
-            appendNode(child, text, marks, inline, basePath, entries, assetIdByPath, assets);
+            appendNode(child, text, marks, inline, basePath, entries, assetIdByPath, knownAssetSha256, assets);
         }
         return new TextWithMarks(text.toString().strip(), marks, inline);
     }
@@ -414,6 +429,7 @@ public class EpubImporter implements BookImporter {
             String basePath,
             Map<String, byte[]> entries,
             Map<String, String> assetIdByPath,
+            Set<String> knownAssetSha256,
             List<ImportedAsset> assets) {
         if (node instanceof TextNode textNode) {
             text.append(textNode.text());
@@ -424,7 +440,8 @@ public class EpubImporter implements BookImporter {
         }
         String tag = element.tagName().toLowerCase(Locale.ROOT);
         if (tag.equals("img")) {
-            String assetId = resolveAsset(element.attr("src"), baseDirOf(basePath), entries, assetIdByPath, assets);
+            String assetId =
+                    resolveAsset(element.attr("src"), baseDirOf(basePath), entries, assetIdByPath, knownAssetSha256, assets);
             inline.add(new InlineObject(InlineObjectType.IMAGE, text.length(), assetId, null));
             return;
         }
@@ -434,7 +451,7 @@ public class EpubImporter implements BookImporter {
         }
         int start = text.length();
         for (Node child : element.childNodes()) {
-            appendNode(child, text, marks, inline, basePath, entries, assetIdByPath, assets);
+            appendNode(child, text, marks, inline, basePath, entries, assetIdByPath, knownAssetSha256, assets);
         }
         int end = text.length();
         if (end > start) {
