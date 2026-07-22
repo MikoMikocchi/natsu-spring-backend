@@ -6,4 +6,4 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record DocumentSyncRequest(
-        @NotEmpty @Size(max = 100) @Valid List<DocumentSyncItemRequest> documents) {}
+        @NotEmpty @Size(max = 100) List<@Valid DocumentSyncItemRequest> documents) {}
