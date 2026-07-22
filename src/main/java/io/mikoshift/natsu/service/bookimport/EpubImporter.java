@@ -80,8 +80,7 @@ public class EpubImporter implements BookImporter {
         Map<String, String> assetIdByPath = new HashMap<>();
         Set<String> knownAssetSha256 = new HashSet<>();
 
-        String coverAssetId =
-                extractCoverAssetId(opf, opfDir, entries, assetIdByPath, knownAssetSha256, assets);
+        String coverAssetId = extractCoverAssetId(opf, opfDir, entries, assetIdByPath, knownAssetSha256, assets);
 
         List<ImportedSection> sections = new ArrayList<>();
         Map<String, String> pathToSectionId = new LinkedHashMap<>();
@@ -227,8 +226,7 @@ public class EpubImporter implements BookImporter {
         for (Element item : opf.select("manifest > item[href]")) {
             String properties = item.attr("properties").toLowerCase(Locale.ROOT);
             if (properties.contains("cover-image")) {
-                return resolveAsset(
-                        item.attr("href"), opfDir, entries, assetIdByPath, knownAssetSha256, assets);
+                return resolveAsset(item.attr("href"), opfDir, entries, assetIdByPath, knownAssetSha256, assets);
             }
         }
         Element meta = opf.selectFirst("metadata > meta[name=cover]");
@@ -236,8 +234,7 @@ public class EpubImporter implements BookImporter {
             String itemId = meta.attr("content");
             for (Element item : opf.select("manifest > item[href]")) {
                 if (item.attr("id").equals(itemId)) {
-                    return resolveAsset(
-                            item.attr("href"), opfDir, entries, assetIdByPath, knownAssetSha256, assets);
+                    return resolveAsset(item.attr("href"), opfDir, entries, assetIdByPath, knownAssetSha256, assets);
                 }
             }
         }
@@ -329,7 +326,8 @@ public class EpubImporter implements BookImporter {
             case "p" -> {
                 Element soleImage = soleImage(el);
                 if (soleImage != null) {
-                    blocks.add(imageBlock(soleImage, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter));
+                    blocks.add(imageBlock(
+                            soleImage, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter));
                 } else {
                     TextWithMarks t = extractText(el, basePath, entries, assetIdByPath, knownAssetSha256, assets);
                     if (!t.text().isBlank() || !t.inlineObjects().isEmpty()) {
@@ -355,14 +353,26 @@ public class EpubImporter implements BookImporter {
             case "figure" -> {
                 Element img = el.selectFirst("img");
                 if (img != null) {
-                    blocks.add(imageBlock(img, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter));
+                    blocks.add(imageBlock(
+                            img, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter));
                 }
             }
-            case "img" -> blocks.add(imageBlock(el, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter));
+            case "img" ->
+                blocks.add(
+                        imageBlock(el, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter));
             default -> {
                 if (!el.children().isEmpty()) {
                     for (Element child : el.children()) {
-                        walk(child, sectionId, basePath, entries, assetIdByPath, knownAssetSha256, assets, counter, blocks);
+                        walk(
+                                child,
+                                sectionId,
+                                basePath,
+                                entries,
+                                assetIdByPath,
+                                knownAssetSha256,
+                                assets,
+                                counter,
+                                blocks);
                     }
                 } else if (!el.text().isBlank()) {
                     TextWithMarks t = extractText(el, basePath, entries, assetIdByPath, knownAssetSha256, assets);
@@ -440,8 +450,8 @@ public class EpubImporter implements BookImporter {
         }
         String tag = element.tagName().toLowerCase(Locale.ROOT);
         if (tag.equals("img")) {
-            String assetId =
-                    resolveAsset(element.attr("src"), baseDirOf(basePath), entries, assetIdByPath, knownAssetSha256, assets);
+            String assetId = resolveAsset(
+                    element.attr("src"), baseDirOf(basePath), entries, assetIdByPath, knownAssetSha256, assets);
             inline.add(new InlineObject(InlineObjectType.IMAGE, text.length(), assetId, null));
             return;
         }

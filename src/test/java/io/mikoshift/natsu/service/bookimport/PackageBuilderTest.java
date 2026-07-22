@@ -102,6 +102,7 @@ class PackageBuilderTest {
         Map<String, byte[]> entries = ZipUtils.readEntries(zip);
 
         assertThat(entries).containsKey("assets/abc123.png");
-        assertThat(entries.keySet().stream().filter(key -> key.startsWith("assets/"))).hasSize(1);
+        assertThat(entries.keySet().stream().filter(key -> key.startsWith("assets/")))
+                .hasSize(1);
     }
 }

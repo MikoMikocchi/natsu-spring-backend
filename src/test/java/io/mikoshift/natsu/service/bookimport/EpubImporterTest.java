@@ -67,10 +67,7 @@ class EpubImporterTest {
         byte[] epub = buildEpub(Map.of(
                 "META-INF/container.xml", containerXml("OEBPS/content.opf"),
                 "OEBPS/content.opf", opfWithTwoImagePaths(),
-                "OEBPS/chapter1.xhtml",
-                        chapterXhtmlRaw(
-                                "Chapter One",
-                                """
+                "OEBPS/chapter1.xhtml", chapterXhtmlRaw("Chapter One", """
                                 <p><img src="images/a.png" alt="first"/><img src="images/b.png" alt="second"/></p>
                                 """),
                 "OEBPS/images/a.png", "same-image-bytes",
